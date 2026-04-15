@@ -679,8 +679,8 @@ export default function NaverBlogApp() {
           )}
         </div>
 
-        {/* 생성 버튼 */}
-        <button className="nb-gen" style={{ ...s.genBtn, background: t.genBtnBg, color: t.genBtnText, opacity: loading ? 0.6 : 1 }} onClick={handleGenerate} disabled={loading}>
+        {/* 생성 버튼 — CTA 초록색 (gradient 팔레트의 electric green) */}
+        <button className="nb-gen" style={{ ...s.genBtn, background: "#00e599", color: "#000000", opacity: loading ? 0.6 : 1 }} onClick={handleGenerate} disabled={loading}>
           {loading ? "WRITING..." : `${cat.label} 포스팅 생성하기 →`}
         </button>
 
