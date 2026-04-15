@@ -458,8 +458,11 @@ export default function NaverBlogApp() {
         .theme-dark button:focus-visible{outline:2px dashed #ffffff;outline-offset:3px}
         .theme-light button:focus-visible{outline:2px dashed #000;outline-offset:3px}
         .nb-card button:focus-visible{outline-color:#000!important}
-        input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.5}
+        input[type="date"]{min-height:48px;appearance:none;-webkit-appearance:none}
+        input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.6;padding:0}
         input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
+        input[type="date"]::-webkit-date-and-time-value{text-align:left}
+        input[type="date"]::-webkit-datetime-edit{padding:0}
         input,textarea{font-size:16px}  /* iOS 줌 방지 */
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes gshift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
@@ -468,13 +471,15 @@ export default function NaverBlogApp() {
         @media (max-width:480px){
           .nb-header{padding:16px 18px!important}
           .nb-header-sub{display:none!important}
-          .nb-body{padding:28px 16px 80px!important}
-          .nb-card{padding:20px!important}
-          .nb-tab{padding:10px 16px 12px!important;font-size:13px!important}
+          .nb-body{padding:32px 18px 90px!important}
+          .nb-card{padding:22px!important}
+          .nb-tab{padding:11px 18px 13px!important;font-size:13px!important}
           .nb-gen{padding:16px 24px 18px!important;font-size:15px!important}
-          .nb-photo,.nb-addphoto{width:72px!important;height:72px!important}
+          .nb-photo,.nb-addphoto{width:76px!important;height:76px!important}
           .nb-hero-label{font-size:10px!important}
-          .nb-result-head{flex-wrap:wrap!important;gap:8px!important}
+          .nb-hero-title{font-size:32px!important;letter-spacing:-0.96px!important}
+          .nb-result-head{flex-wrap:wrap!important;gap:10px!important}
+          .nb-sec-title{font-size:20px!important}
         }
         /* 태블릿 / 아이패드 (481~900px) */
         @media (min-width:481px) and (max-width:900px){
@@ -515,7 +520,7 @@ export default function NaverBlogApp() {
         {/* Hero 라벨 + 섹션 타이틀 */}
         <div style={{ marginBottom: 36 }}>
           <div className="nb-hero-label" style={{ fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: t.pageText, marginBottom: 18 }}>/ 01 — CHOOSE CATEGORY</div>
-          <div style={{ fontSize: 38, fontWeight: 450, lineHeight: 1.08, letterSpacing: "-1.14px", fontFamily: FF_SANS, color: t.pageText }}>
+          <div className="nb-hero-title" style={{ fontSize: 38, fontWeight: 450, lineHeight: 1.08, letterSpacing: "-1.14px", fontFamily: FF_SANS, color: t.pageText }}>
             어떤 글을<br />작성할까요?
           </div>
         </div>
@@ -542,7 +547,7 @@ export default function NaverBlogApp() {
 
         {/* 기본 정보 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>{cat.emoji} {cat.label} 정보</div>
+          <div className="nb-sec-title" style={s.secTitle}>{cat.emoji} {cat.label} 정보</div>
 
           <div style={{ marginBottom: 12 }}>
             <label style={s.label}>{fc.nameLabel}</label>
@@ -591,7 +596,14 @@ export default function NaverBlogApp() {
             </div>
             <div style={s.col}>
               <label style={s.label}>{fc.dateLabel}</label>
-              <input type="date" style={s.input} value={date} onChange={e => setDate(e.target.value)} />
+              <div style={{ position: "relative" }}>
+                <input type="date" style={{ ...s.input, color: date ? COLORS.text : "transparent", WebkitTextFillColor: date ? COLORS.text : "transparent" }} value={date} onChange={e => setDate(e.target.value)} />
+                {!date && (
+                  <div style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: COLORS.muted, pointerEvents: "none", fontSize: 15, fontWeight: 400, letterSpacing: "-0.14px", fontFamily: FF_SANS }}>
+                    📅 날짜 선택
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -610,7 +622,7 @@ export default function NaverBlogApp() {
 
         {/* 메모 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>📝 메모</div>
+          <div className="nb-sec-title" style={s.secTitle}>📝 메모</div>
           <textarea style={s.textarea} placeholder={fc.memoPH} value={memo} onChange={e => setMemo(e.target.value)} />
           <div style={{ textAlign: "right", fontFamily: FF_MONO, fontSize: 10, letterSpacing: "0.5px", color: memo.length > 0 ? COLORS.text : COLORS.muted, marginTop: 8, textTransform: "uppercase" }}>
             {memo.length.toLocaleString()} CHAR
@@ -619,7 +631,7 @@ export default function NaverBlogApp() {
 
         {/* 사진 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>📸 사진 첨부</div>
+          <div className="nb-sec-title" style={s.secTitle}>📸 사진 첨부</div>
           <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 16, fontWeight: 340, letterSpacing: "-0.14px" }}>사진을 올리면 AI가 내용을 파악해 글에 반영해요 · 드래그로 순서 변경 가능</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {photos.map((p, i) => (
@@ -661,7 +673,7 @@ export default function NaverBlogApp() {
         {/* 내 글 스타일 */}
         <div style={s.card} className="nb-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showStyle ? 18 : 0 }}>
-            <div style={{ ...s.secTitle, marginBottom: 0 }}>✨ 내 글 스타일 <span style={{ opacity: 0.45, marginLeft: 4, fontSize: 14, fontWeight: 400 }}>(선택)</span></div>
+            <div className="nb-sec-title" style={{ ...s.secTitle, marginBottom: 0 }}>✨ 내 글 스타일 <span style={{ opacity: 0.45, marginLeft: 4, fontSize: 14, fontWeight: 400 }}>(선택)</span></div>
             <button onClick={() => setShowStyle(!showStyle)} style={{ ...s.monoLabelMuted, fontSize: 10, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
               {showStyle ? "CLOSE" : "EXPAND"}
             </button>
@@ -688,7 +700,7 @@ export default function NaverBlogApp() {
 
         {keywords.length > 0 && !loading && (
           <div style={{ ...s.card, marginTop: 20 }} className="nb-card">
-            <div style={s.secTitle}>🔑 트렌드 키워드</div>
+            <div className="nb-sec-title" style={s.secTitle}>🔑 트렌드 키워드</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {keywords.map((kw, i) => <span key={i} style={s.kwTag}>#{kw}</span>)}
             </div>
