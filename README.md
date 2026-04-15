@@ -53,7 +53,7 @@
 
 ```bash
 git clone https://github.com/donggil-ux/naver-blog-writer.git
-cd naver-blog-writer/naver-blog-writer-final
+cd naver-blog-writer
 npm install
 ```
 
@@ -101,7 +101,7 @@ npm run preview    # 빌드 결과 미리보기
 ## 📂 프로젝트 구조
 
 ```
-naver-blog-writer-final/
+naver-blog-writer/
 ├── public/
 │   └── favicon.svg
 ├── src/
@@ -111,6 +111,7 @@ naver-blog-writer-final/
 ├── package.json
 ├── vite.config.js
 ├── README.md
+├── CONTEXT.md        # 개발 컨텍스트 (API 구조, state, 이슈 히스토리)
 └── SKILL.md          # Claude 스킬 정의 (네이버 블로그 SEO 규칙)
 ```
 
@@ -146,7 +147,7 @@ naver-blog-writer-final/
 |---|---|
 | **빌드 커맨드** | `npm run build` |
 | **출력 디렉토리** | `dist` |
-| **루트 디렉토리** | `naver-blog-writer-final` |
+| **루트 디렉토리** | `.` (리포 루트) |
 | **환경변수** | `VITE_ANTHROPIC_API_KEY` |
 | **프레임워크** | Vite (자동 감지) |
 
