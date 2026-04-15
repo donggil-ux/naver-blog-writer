@@ -161,12 +161,14 @@ const SYSTEM_PROMPT = {
 };
 
 const s = {
-  app: { minHeight: "100vh", background: COLORS.bg, fontFamily: FF_SANS, color: COLORS.text, fontFeatureSettings: '"kern"', WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale", letterSpacing: "-0.14px" },
-  header: { background: COLORS.bg, borderBottom: `1px solid ${COLORS.border}`, padding: "22px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10 },
+  app: { minHeight: "100vh", background: "#000000", fontFamily: FF_SANS, color: "#ffffff", fontFeatureSettings: '"kern"', WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale", letterSpacing: "-0.14px" },
+  header: { background: "#000000", borderBottom: "1px solid rgba(255,255,255,0.12)", padding: "22px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10 },
   headerLeft: { display: "flex", alignItems: "center", gap: 14 },
-  logo: { width: 36, height: 36, background: COLORS.text, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.bg, fontSize: 15, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: FF_SANS },
+  logo: { width: 36, height: 36, background: "#ffffff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#000000", fontSize: 15, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: FF_SANS },
   monoLabel: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: COLORS.text },
   monoLabelMuted: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: COLORS.muted },
+  monoLabelLight: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: "#ffffff" },
+  monoLabelLightMuted: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" },
   body: { maxWidth: 780, margin: "0 auto", padding: "48px 24px 120px" },
   card: { background: COLORS.bg, borderRadius: 8, padding: 32, marginBottom: 14, border: `1px solid ${COLORS.border}` },
   secTitle: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, color: COLORS.text, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.6px", textTransform: "uppercase" },
@@ -175,7 +177,7 @@ const s = {
   textarea: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", resize: "vertical", minHeight: 100, boxSizing: "border-box", lineHeight: 1.55, fontFamily: FF_SANS, fontWeight: 340, letterSpacing: "-0.14px" },
   row: { display: "flex", gap: 12, marginBottom: 14 },
   col: { flex: 1 },
-  genBtn: { width: "100%", padding: "18px 32px 20px", borderRadius: 50, background: COLORS.text, color: COLORS.bg, fontSize: 16, fontWeight: 480, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.14px" },
+  genBtn: { width: "100%", padding: "18px 32px 20px", borderRadius: 50, background: "#ffffff", color: "#000000", fontSize: 16, fontWeight: 480, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.14px" },
   copyBtn: { padding: "8px 18px 10px", borderRadius: 50, background: COLORS.bg, color: COLORS.text, fontSize: 13, fontWeight: 480, border: `1px solid ${COLORS.border}`, cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.14px" },
   copyBtnDark: { padding: "8px 18px 10px", borderRadius: 50, background: COLORS.text, color: COLORS.bg, fontSize: 13, fontWeight: 480, border: "none", cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.14px" },
   kwTag: { padding: "6px 14px 8px", borderRadius: 50, background: COLORS.accentLight, color: COLORS.text, fontSize: 12, fontWeight: 400, fontFamily: FF_SANS, letterSpacing: "-0.1px" },
@@ -185,10 +187,10 @@ const s = {
 
 function Spinner({ step }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", gap: 16, color: COLORS.muted, fontSize: 13, fontFamily: FF_SANS }}>
-      <div style={{ width: 34, height: 34, border: `2px solid ${COLORS.accentLight}`, borderTop: `2px solid ${COLORS.text}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", gap: 16, color: "rgba(255,255,255,0.55)", fontSize: 13, fontFamily: FF_SANS }}>
+      <div style={{ width: 34, height: 34, border: "2px solid rgba(255,255,255,0.2)", borderTop: "2px solid #ffffff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <div style={{ textAlign: "center" }}>
-        <div style={{ ...s.monoLabel, fontSize: 11, color: COLORS.text, marginBottom: 6 }}>{step}</div>
+        <div style={{ ...s.monoLabelLight, fontSize: 11, marginBottom: 6 }}>{step}</div>
         <div style={{ fontWeight: 340, letterSpacing: "-0.14px" }}>잠시만 기다려주세요...</div>
       </div>
     </div>
@@ -364,7 +366,10 @@ export default function NaverBlogApp() {
         button{-webkit-tap-highlight-color:transparent;cursor:pointer}
         button:active{transform:scale(0.98)}
         /* Figma 디자인 시스템: dashed 2px focus — 에디터 셀렉션 핸들 호응 */
-        input:focus,textarea:focus,button:focus-visible{outline:2px dashed #000;outline-offset:3px;border-color:#000!important}
+        /* 카드(흰 배경) 안의 input/textarea는 검정 dashed, 페이지(검정 배경) 버튼은 흰색 dashed */
+        input:focus,textarea:focus{outline:2px dashed #000;outline-offset:3px;border-color:#000!important}
+        button:focus-visible{outline:2px dashed #ffffff;outline-offset:3px}
+        .nb-card button:focus-visible{outline-color:#000}
         input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.5}
         input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
         input,textarea{font-size:16px}  /* iOS 줌 방지 */
@@ -400,19 +405,19 @@ export default function NaverBlogApp() {
         <div style={s.headerLeft}>
           <div style={s.logo}>N</div>
           <div>
-            <div style={{ fontSize: 19, fontWeight: 540, letterSpacing: "-0.38px", lineHeight: 1.1 }}>블로그 AI 작성기</div>
-            <div className="nb-header-sub" style={{ ...s.monoLabelMuted, marginTop: 4 }}>NAVER BLOG POST GENERATOR</div>
+            <div style={{ fontSize: 19, fontWeight: 540, letterSpacing: "-0.38px", lineHeight: 1.1, color: "#ffffff" }}>블로그 AI 작성기</div>
+            <div className="nb-header-sub" style={{ ...s.monoLabelLightMuted, marginTop: 4 }}>NAVER BLOG POST GENERATOR</div>
           </div>
         </div>
-        <div style={{ ...s.monoLabelMuted, fontSize: 10 }} className="nb-header-sub">V 2.0</div>
+        <div style={{ ...s.monoLabelLightMuted, fontSize: 10 }} className="nb-header-sub">V 2.0</div>
       </div>
 
       <div style={s.body} className="nb-body">
 
         {/* Hero 라벨 + 섹션 타이틀 */}
         <div style={{ marginBottom: 36 }}>
-          <div className="nb-hero-label" style={{ ...s.monoLabel, fontSize: 11, marginBottom: 18 }}>/ 01 — CHOOSE CATEGORY</div>
-          <div style={{ fontSize: 38, fontWeight: 450, lineHeight: 1.08, letterSpacing: "-1.14px", fontFamily: FF_SANS }}>
+          <div className="nb-hero-label" style={{ ...s.monoLabelLight, fontSize: 11, marginBottom: 18 }}>/ 01 — CHOOSE CATEGORY</div>
+          <div style={{ fontSize: 38, fontWeight: 450, lineHeight: 1.08, letterSpacing: "-1.14px", fontFamily: FF_SANS, color: "#ffffff" }}>
             어떤 글을<br />작성할까요?
           </div>
         </div>
@@ -424,9 +429,9 @@ export default function NaverBlogApp() {
             return (
               <button key={c.id} onClick={() => resetForm(c.id)} className="nb-tab" style={{
                 padding: "12px 22px 14px", borderRadius: 50,
-                border: active ? `1px solid ${COLORS.text}` : `1px solid ${COLORS.border}`,
-                background: active ? COLORS.text : COLORS.bg,
-                color: active ? COLORS.bg : COLORS.text,
+                border: active ? "1px solid #ffffff" : "1px solid rgba(255,255,255,0.25)",
+                background: active ? "#ffffff" : "transparent",
+                color: active ? "#000000" : "#ffffff",
                 fontWeight: 480, fontSize: 14, fontFamily: FF_SANS, letterSpacing: "-0.14px",
                 display: "flex", alignItems: "center", gap: 8, transition: "all 0.15s",
               }}>
