@@ -244,26 +244,27 @@ export default function NaverBlogApp() {
     setPhotos([]); setStoreInfo(null); setSearchError(""); setResult(null); setKeywords([]);
   };
 
-  // 단일 API 호출로 웹검색 (web_search_20250305는 서버사이드 툴 — 루프 불필요)
-  const searchWithWeb = async (userMsg, system, maxTokens = 800) => {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST", headers: {
-        "Content-Type": "application/json",
-        "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-calls": "true",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: maxTokens,
-        system,
-        messages: [{ role: "user", content: userMsg }],
-        tools: [{ type: "web_search_20250305", name: "web_search" }],
-      }),
+  // Vercel 서버리스 프록시 경유 — CORS 이슈 회피 + API 키 서버 보관
+  const callAnthropic = async (payload) => {
+    const res = await fetch("/api/anthropic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-    // 텍스트 블록만 추출 (tool_use, tool_result 블록 제외)
+    return data;
+  };
+
+  // 단일 API 호출로 웹검색 (web_search_20250305는 서버사이드 툴 — 루프 불필요)
+  const searchWithWeb = async (userMsg, system, maxTokens = 800) => {
+    const data = await callAnthropic({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: userMsg }],
+      tools: [{ type: "web_search_20250305", name: "web_search" }],
+    });
     return data.content?.filter(b => b.type === "text").map(b => b.text).join("") || "";
   };
 
@@ -326,22 +327,14 @@ export default function NaverBlogApp() {
         daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kws.length?kws.join(", "):"SEO에 맞게 자유롭게"}`,
       }[category];
 
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: {
-        "Content-Type": "application/json",
-        "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-calls": "true",
-      },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 3000,
-          system: SYSTEM_PROMPT[category](styleGuide),
-          messages: [{ role: "user", content: `아래 정보로 네이버 블로그 포스팅 작성해줘.\n${userMsg}` }],
-        }),
+      const d = await callAnthropic({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 3000,
+        system: SYSTEM_PROMPT[category](styleGuide),
+        messages: [{ role: "user", content: `아래 정보로 네이버 블로그 포스팅 작성해줘.\n${userMsg}` }],
       });
-      const d = await res.json();
       setResult(d.content?.filter(b => b.type === "text").map(b => b.text).join("") || "");
-    } catch (e) { alert("오류가 발생했어요. 다시 시도해주세요."); }
+    } catch (e) { console.error(e); alert(`오류: ${e.message}`); }
     finally { setLoading(false); setLoadingStep(""); }
   };
 

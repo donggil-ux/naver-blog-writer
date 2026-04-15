@@ -59,13 +59,17 @@ npm install
 
 ### 환경변수 설정
 
-프로젝트 루트에 `.env` 파일을 만들고 API 키를 넣어주세요:
+API 호출은 `api/anthropic.js` 서버리스 프록시를 경유하므로 **`VITE_` 프리픽스 없이** 서버 전용으로 설정합니다.
 
+**로컬 개발 (`.env` 파일):**
 ```env
-VITE_ANTHROPIC_API_KEY=sk-ant-xxx...
+ANTHROPIC_API_KEY=sk-ant-xxx...
 ```
 
+**Vercel 배포:** 대시보드 → Settings → Environment Variables에서 `ANTHROPIC_API_KEY` 추가 → 재배포
+
 > ⚠️ `.env` 파일은 절대 커밋하지 마세요 (`.gitignore`에 포함되어 있습니다)
+> 🔒 API 키는 서버에서만 사용되며 브라우저에 노출되지 않습니다
 
 ### 실행
 
@@ -102,6 +106,8 @@ npm run preview    # 빌드 결과 미리보기
 
 ```
 naver-blog-writer/
+├── api/
+│   └── anthropic.js  # Vercel 서버리스 프록시 (CORS 회피 + API 키 보호)
 ├── public/
 │   └── favicon.svg
 ├── src/
