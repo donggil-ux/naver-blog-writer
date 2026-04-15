@@ -1,5 +1,66 @@
 import { useState, useRef } from "react";
 
+const escapeHTML = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const inlineFormat = (text) => {
+  let t = escapeHTML(text);
+  t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/\[이미지 첨부:\s*([^\]]+)\]/g, '<span style="display:inline-block;padding:4px 10px;background:#e8f4ed;color:#2d6a4f;border-radius:6px;font-size:13px;">📷 $1</span>');
+  return t;
+};
+
+const renderTable = (lines) => {
+  const rows = lines.filter(l => !/^\|[\s\-:|]+\|$/.test(l));
+  const parsed = rows.map(r => {
+    const parts = r.split("|");
+    return parts.slice(1, parts.length - 1).map(c => c.trim());
+  });
+  if (!parsed.length) return "";
+  const [head, ...body] = parsed;
+  const th = head.map(c => `<td style="padding:10px;background:#f5f5f5;font-weight:700;border:1px solid #ddd;">${escapeHTML(c)}</td>`).join("");
+  const tb = body.map(r => `<tr>${r.map(c => `<td style="padding:10px;border:1px solid #ddd;">${escapeHTML(c)}</td>`).join("")}</tr>`).join("");
+  return `<table style="border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;"><tbody><tr>${th}</tr>${tb}</tbody></table>`;
+};
+
+const toNaverHTML = (text) => {
+  if (!text) return "";
+  const lines = text.split("\n");
+  const out = [];
+  let i = 0;
+  while (i < lines.length) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) { i++; continue; }
+    if (/^\[.+\]$/.test(trimmed)) {
+      out.push(`<h3 style="font-size:16px;font-weight:800;color:#2d6a4f;margin:22px 0 10px;">${escapeHTML(trimmed.replace(/^\[|\]$/g, ""))}</h3>`);
+      i++; continue;
+    }
+    if (trimmed.startsWith("|")) {
+      const tbl = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) { tbl.push(lines[i].trim()); i++; }
+      out.push(renderTable(tbl));
+      continue;
+    }
+    if (/^\d+\.\s/.test(trimmed)) {
+      out.push(`<p style="line-height:1.85;margin:0 0 6px;">${inlineFormat(trimmed)}</p>`);
+      i++; continue;
+    }
+    if (trimmed.startsWith("#")) {
+      out.push(`<p style="line-height:1.85;margin:10px 0;color:#2d6a4f;font-weight:600;">${escapeHTML(trimmed)}</p>`);
+      i++; continue;
+    }
+    const para = [];
+    while (i < lines.length) {
+      const t = lines[i].trim();
+      if (!t || /^\[.+\]$/.test(t) || t.startsWith("|") || t.startsWith("#") || /^\d+\.\s/.test(t)) break;
+      para.push(t); i++;
+    }
+    if (para.length) {
+      out.push(`<p style="line-height:1.95;margin:0 0 16px;font-size:15px;">${inlineFormat(para.join("<br/>"))}</p>`);
+    }
+  }
+  return `<div style="font-family:'Pretendard','Apple SD Gothic Neo',sans-serif;color:#1a1a1a;max-width:720px;">${out.join("\n")}</div>`;
+};
+
 const COLORS = {
   bg: "#faf9f6", card: "#ffffff", accent: "#2d6a4f",
   accentLight: "#e8f4ed", accentMid: "#52b788",
@@ -94,7 +155,7 @@ const s = {
   app: { minHeight: "100vh", background: COLORS.bg, fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", color: COLORS.text },
   header: { background: COLORS.card, borderBottom: `1px solid ${COLORS.border}`, padding: "18px 24px", display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 10 },
   logo: { width: 32, height: 32, background: COLORS.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 16 },
-  body: { maxWidth: 600, margin: "0 auto", padding: "20px 16px 80px" },
+  body: { maxWidth: 760, margin: "0 auto", padding: "24px 20px 80px" },
   card: { background: COLORS.card, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1px solid ${COLORS.border}` },
   secTitle: { fontSize: 13, fontWeight: 700, color: COLORS.accent, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 },
   label: { fontSize: 12, color: COLORS.muted, marginBottom: 6, display: "block" },
@@ -138,10 +199,45 @@ export default function NaverBlogApp() {
   const [result, setResult]     = useState(null);
   const [keywords, setKeywords] = useState([]);
   const [copied, setCopied]     = useState(false);
+  const [htmlCopied, setHtmlCopied] = useState(false);
   const [searching, setSearching] = useState(false);
   const [storeInfo, setStoreInfo] = useState(null);
   const [searchError, setSearchError] = useState("");
   const fileRef = useRef();
+  const dragIdx = useRef(null);
+  const [dragOver, setDragOver] = useState(null);
+
+  const reorderPhotos = (from, to) => {
+    if (from === to || from == null || to == null) return;
+    setPhotos(prev => {
+      const arr = [...prev];
+      const [m] = arr.splice(from, 1);
+      arr.splice(to, 0, m);
+      return arr;
+    });
+  };
+
+  const copyHTML = async () => {
+    const html = toNaverHTML(result);
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([result], { type: "text/plain" }),
+          }),
+        ]);
+      } else {
+        await navigator.clipboard.writeText(html);
+      }
+      setHtmlCopied(true);
+      setTimeout(() => setHtmlCopied(false), 2000);
+    } catch {
+      await navigator.clipboard.writeText(html);
+      setHtmlCopied(true);
+      setTimeout(() => setHtmlCopied(false), 2000);
+    }
+  };
 
   const resetForm = (cat) => {
     setCategory(cat); setName(""); setLocation(""); setDate(""); setMenus(""); setTarget(""); setMemo("");
@@ -257,12 +353,45 @@ export default function NaverBlogApp() {
       <style>{`
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         *{box-sizing:border-box} input:focus,textarea:focus{border-color:#2d6a4f!important} button:active{transform:scale(0.97)}
+        @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
         @keyframes pdot{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
         .shimbar{background:linear-gradient(90deg,#c8e6c9 25%,#e8f5e9 50%,#c8e6c9 75%);background-size:400px 100%;animation:shimmer 1.4s infinite;border-radius:6px}
+        input,textarea,button{font-family:inherit}
+        button{-webkit-tap-highlight-color:transparent}
+        /* 태블릿 / 아이패드 (481~900px) */
+        @media (min-width:481px) and (max-width:900px){
+          .nb-body{max-width:720px!important;padding:28px 24px 100px!important}
+          .nb-card{padding:22px!important;border-radius:18px!important}
+          .nb-tab{padding:16px 8px!important;border-radius:16px!important}
+          .nb-tab-emoji{font-size:24px!important}
+          .nb-tab-label{font-size:14px!important}
+          .nb-input,.nb-textarea{font-size:15px!important;padding:13px 16px!important}
+          .nb-gen{padding:18px!important;font-size:16px!important}
+          .nb-photo,.nb-addphoto{width:88px!important;height:88px!important}
+          .nb-result{font-size:15px!important;line-height:1.9!important}
+        }
+        /* 데스크톱 (≥901px) */
+        @media (min-width:901px){
+          .nb-body{max-width:760px!important;padding:32px 24px 120px!important}
+          .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
+        }
+        /* iOS 입력 줌 방지 — 전체 공통 */
+        input,textarea{font-size:16px}
+        /* 모바일 (≤480px) */
+        @media (max-width:480px){
+          .nb-body{padding:14px 12px 70px!important}
+          .nb-card{padding:16px!important;border-radius:14px!important;margin-bottom:10px!important}
+          .nb-header{padding:14px 16px!important}
+          .nb-tab{padding:11px 2px!important}
+          .nb-tab-emoji{font-size:18px!important}
+          .nb-tab-label{font-size:11px!important}
+          .nb-tab-sub{display:none!important}
+          .nb-gen{padding:14px!important;font-size:14px!important}
+        }
       `}</style>
 
-      <div style={s.header}>
+      <div style={s.header} className="nb-header">
         <div style={s.logo}>🍃</div>
         <div>
           <div style={{ fontSize: 17, fontWeight: 700 }}>블로그 AI 작성기</div>
@@ -270,12 +399,12 @@ export default function NaverBlogApp() {
         </div>
       </div>
 
-      <div style={s.body}>
+      <div style={s.body} className="nb-body">
 
         {/* 카테고리 탭 */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {CATEGORIES.map(c => (
-            <button key={c.id} onClick={() => resetForm(c.id)} style={{
+            <button key={c.id} onClick={() => resetForm(c.id)} className="nb-tab" style={{
               flex: 1, padding: "12px 4px", borderRadius: 14, border: "none", cursor: "pointer",
               background: category === c.id ? COLORS.accent : COLORS.card,
               color: category === c.id ? "white" : COLORS.muted,
@@ -283,22 +412,52 @@ export default function NaverBlogApp() {
               fontSize: 12, transition: "all 0.2s",
               boxShadow: category === c.id ? "0 2px 8px rgba(45,106,79,0.25)" : `0 0 0 1px ${COLORS.border}`,
             }}>
-              <div style={{ fontSize: 20, marginBottom: 3 }}>{c.emoji}</div>
-              <div>{c.label}</div>
-              <div style={{ fontSize: 10, opacity: 0.75, marginTop: 1 }}>{c.sub}</div>
+              <div className="nb-tab-emoji" style={{ fontSize: 20, marginBottom: 3 }}>{c.emoji}</div>
+              <div className="nb-tab-label">{c.label}</div>
+              <div className="nb-tab-sub" style={{ fontSize: 10, opacity: 0.75, marginTop: 1 }}>{c.sub}</div>
             </button>
           ))}
         </div>
 
         {/* 기본 정보 */}
-        <div style={s.card}>
+        <div style={s.card} className="nb-card">
           <div style={s.secTitle}>{cat.emoji} {cat.label} 정보</div>
 
           <div style={{ marginBottom: 12 }}>
             <label style={s.label}>{fc.nameLabel}</label>
-            <input style={s.input} placeholder={fc.namePH} value={name}
-              onChange={e => setName(e.target.value)} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <input style={{ ...s.input, flex: 1 }} placeholder={fc.namePH} value={name}
+                onChange={e => setName(e.target.value)} />
+              <button onClick={fetchStoreInfo} disabled={searching || !name.trim()} style={{
+                padding: "0 16px", borderRadius: 10, border: "none",
+                background: searching || !name.trim() ? COLORS.border : COLORS.accent,
+                color: "white", fontSize: 13, fontWeight: 700, cursor: searching || !name.trim() ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap", minWidth: 72,
+              }}>{searching ? "검색중" : "🔍 검색"}</button>
+            </div>
           </div>
+
+          {searching && (
+            <div style={{ padding: "12px 14px", background: COLORS.accentLight, borderRadius: 10, marginBottom: 12, fontSize: 13, color: COLORS.accent, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 14, height: 14, border: `2px solid ${COLORS.accentMid}`, borderTop: `2px solid transparent`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              {SEARCH_LABEL[category]}
+            </div>
+          )}
+          {searchError && !searching && (
+            <div style={{ padding: "10px 14px", background: "#fff4f4", color: "#c03030", borderRadius: 10, marginBottom: 12, fontSize: 12 }}>{searchError}</div>
+          )}
+          {storeInfo && !searching && (
+            <div style={{ padding: "12px 14px", background: COLORS.accentLight, borderRadius: 10, marginBottom: 12, fontSize: 13, lineHeight: 1.6, color: COLORS.text }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.accent, marginBottom: 6 }}>✓ 검색 결과 (자동 입력됨)</div>
+              {storeInfo.location && <div>📍 {storeInfo.location}</div>}
+              {storeInfo.hours && <div>🕐 {storeInfo.hours}</div>}
+              {storeInfo.closed && <div>🚫 휴무: {storeInfo.closed}</div>}
+              {storeInfo.phone && <div>📞 {storeInfo.phone}</div>}
+              {storeInfo.parking && <div>🅿 {storeInfo.parking}</div>}
+              {storeInfo.menus?.length > 0 && <div>🍽 {storeInfo.menus.join(", ")}</div>}
+              {storeInfo.summary && <div style={{ color: COLORS.muted, marginTop: 4 }}>{storeInfo.summary}</div>}
+            </div>
+          )}
 
 
                     <div style={s.row}>
@@ -326,7 +485,7 @@ export default function NaverBlogApp() {
         </div>
 
         {/* 메모 */}
-        <div style={s.card}>
+        <div style={s.card} className="nb-card">
           <div style={s.secTitle}>📝 메모</div>
           <textarea style={s.textarea} placeholder={fc.memoPH} value={memo} onChange={e => setMemo(e.target.value)} />
           <div style={{ textAlign: "right", fontSize: 11, color: memo.length > 0 ? COLORS.accent : COLORS.muted, marginTop: 5 }}>
@@ -335,19 +494,37 @@ export default function NaverBlogApp() {
         </div>
 
         {/* 사진 */}
-        <div style={s.card}>
+        <div style={s.card} className="nb-card">
           <div style={s.secTitle}>📸 사진 첨부</div>
-          <div style={{ fontSize: 12, color: COLORS.muted, marginBottom: 10 }}>사진을 올리면 AI가 내용을 파악해 글에 반영해요</div>
+          <div style={{ fontSize: 12, color: COLORS.muted, marginBottom: 10 }}>사진을 올리면 AI가 내용을 파악해 글에 반영해요 · 드래그로 순서 변경 가능</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {photos.map((p, i) => (
-              <div key={i} style={{ position: "relative" }}>
-                <img src={p.url} alt={p.name} style={s.photoThumb} />
+              <div
+                key={p.url + i}
+                draggable
+                onDragStart={() => { dragIdx.current = i; }}
+                onDragOver={e => { e.preventDefault(); if (dragOver !== i) setDragOver(i); }}
+                onDragLeave={() => setDragOver(null)}
+                onDrop={e => { e.preventDefault(); reorderPhotos(dragIdx.current, i); dragIdx.current = null; setDragOver(null); }}
+                onDragEnd={() => { dragIdx.current = null; setDragOver(null); }}
+                style={{
+                  position: "relative",
+                  cursor: "grab",
+                  transform: dragOver === i ? "scale(1.06)" : "scale(1)",
+                  transition: "transform 0.15s",
+                  outline: dragOver === i ? `2px solid ${COLORS.accent}` : "none",
+                  outlineOffset: 2,
+                  borderRadius: 10,
+                }}
+              >
+                <img src={p.url} alt={p.name} style={s.photoThumb} draggable={false} />
+                <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.55)", color: "white", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{i + 1}</div>
                 <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))}
-                  style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: "50%", background: "#ff4d4d", color: "white", border: "none", fontSize: 10, cursor: "pointer", lineHeight: "18px", textAlign: "center" }}>✕</button>
+                  style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ff4d4d", color: "white", border: "none", fontSize: 11, cursor: "pointer", lineHeight: "20px", textAlign: "center", padding: 0 }}>✕</button>
               </div>
             ))}
             <div style={s.addPhoto} onClick={() => fileRef.current.click()}>
-              <span style={{ fontSize: 20 }}>+</span><span>사진 추가</span>
+              <span style={{ fontSize: 22 }}>+</span><span>사진 추가</span>
             </div>
           </div>
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }}
@@ -358,7 +535,7 @@ export default function NaverBlogApp() {
         </div>
 
         {/* 내 글 스타일 */}
-        <div style={s.card}>
+        <div style={s.card} className="nb-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showStyle ? 12 : 0 }}>
             <div style={s.secTitle}>✨ 내 글 스타일 (선택)</div>
             <button onClick={() => setShowStyle(!showStyle)} style={{ fontSize: 12, color: COLORS.muted, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
@@ -398,7 +575,10 @@ export default function NaverBlogApp() {
                   {result.length.toLocaleString()}자
                 </span>
                 <button style={s.copyBtn} onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
-                  {copied ? "✓ 복사됨!" : "복사하기"}
+                  {copied ? "✓ 복사됨" : "텍스트 복사"}
+                </button>
+                <button style={{ ...s.copyBtn, background: COLORS.accent, color: "white" }} onClick={copyHTML}>
+                  {htmlCopied ? "✓ 복사됨" : "📋 에디터용 복사"}
                 </button>
               </div>
             </div>
