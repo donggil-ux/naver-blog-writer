@@ -1,4 +1,38 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+
+// 다크/라이트 테마 — 카드는 양쪽 모두 흰색 유지, 페이지 chrome만 반전
+const THEMES = {
+  dark: {
+    pageBg: "#000000",
+    pageText: "#ffffff",
+    pageMuted: "rgba(255,255,255,0.55)",
+    pageBorder: "rgba(255,255,255,0.12)",
+    tabBorder: "rgba(255,255,255,0.25)",
+    tabActiveBg: "#ffffff",
+    tabActiveText: "#000000",
+    tabInactiveText: "#ffffff",
+    genBtnBg: "#ffffff",
+    genBtnText: "#000000",
+    logoBg: "#ffffff",
+    logoText: "#000000",
+    focusOutline: "#ffffff",
+  },
+  light: {
+    pageBg: "#ffffff",
+    pageText: "#000000",
+    pageMuted: "rgba(0,0,0,0.55)",
+    pageBorder: "rgba(0,0,0,0.12)",
+    tabBorder: "rgba(0,0,0,0.2)",
+    tabActiveBg: "#000000",
+    tabActiveText: "#ffffff",
+    tabInactiveText: "#000000",
+    genBtnBg: "#000000",
+    genBtnText: "#ffffff",
+    logoBg: "#000000",
+    logoText: "#ffffff",
+    focusOutline: "#000000",
+  },
+};
 
 const escapeHTML = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -185,12 +219,15 @@ const s = {
   addPhoto: { width: 88, height: 88, borderRadius: 8, border: `1px dashed ${COLORS.muted}`, background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.muted, fontSize: 10, gap: 3, fontFamily: FF_MONO, letterSpacing: "0.5px", textTransform: "uppercase" },
 };
 
-function Spinner({ step }) {
+function Spinner({ step, theme }) {
+  const pt = theme?.pageText || "#ffffff";
+  const pm = theme?.pageMuted || "rgba(255,255,255,0.55)";
+  const pb = theme?.pageBorder || "rgba(255,255,255,0.2)";
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", gap: 16, color: "rgba(255,255,255,0.55)", fontSize: 13, fontFamily: FF_SANS }}>
-      <div style={{ width: 34, height: 34, border: "2px solid rgba(255,255,255,0.2)", borderTop: "2px solid #ffffff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", gap: 16, color: pm, fontSize: 13, fontFamily: FF_SANS }}>
+      <div style={{ width: 34, height: 34, border: `2px solid ${pb}`, borderTop: `2px solid ${pt}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <div style={{ textAlign: "center" }}>
-        <div style={{ ...s.monoLabelLight, fontSize: 11, marginBottom: 6 }}>{step}</div>
+        <div style={{ fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: pt, marginBottom: 6 }}>{step}</div>
         <div style={{ fontWeight: 340, letterSpacing: "-0.14px" }}>잠시만 기다려주세요...</div>
       </div>
     </div>
@@ -198,6 +235,20 @@ function Spinner({ step }) {
 }
 
 export default function NaverBlogApp() {
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("nb-theme") || "dark";
+    }
+    return "dark";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nb-theme", theme);
+    }
+  }, [theme]);
+  const t = THEMES[theme];
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+
   const [category, setCategory] = useState("food");
   const [name, setName]         = useState("");
   const [location, setLocation] = useState("");
@@ -357,7 +408,7 @@ export default function NaverBlogApp() {
   const cat = CATEGORIES.find(c => c.id === category);
 
   return (
-    <div style={s.app}>
+    <div style={{ ...s.app, background: t.pageBg, color: t.pageText }} className={`nb-root theme-${theme}`}>
       <style>{`
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css');
         *{box-sizing:border-box;font-feature-settings:"kern"}
@@ -366,10 +417,11 @@ export default function NaverBlogApp() {
         button{-webkit-tap-highlight-color:transparent;cursor:pointer}
         button:active{transform:scale(0.98)}
         /* Figma 디자인 시스템: dashed 2px focus — 에디터 셀렉션 핸들 호응 */
-        /* 카드(흰 배경) 안의 input/textarea는 검정 dashed, 페이지(검정 배경) 버튼은 흰색 dashed */
+        /* 카드(흰 배경)는 항상 검정 dashed, 페이지 버튼은 테마에 따라 흰/검정 */
         input:focus,textarea:focus{outline:2px dashed #000;outline-offset:3px;border-color:#000!important}
-        button:focus-visible{outline:2px dashed #ffffff;outline-offset:3px}
-        .nb-card button:focus-visible{outline-color:#000}
+        .theme-dark button:focus-visible{outline:2px dashed #ffffff;outline-offset:3px}
+        .theme-light button:focus-visible{outline:2px dashed #000;outline-offset:3px}
+        .nb-card button:focus-visible{outline-color:#000!important}
         input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.5}
         input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
         input,textarea{font-size:16px}  /* iOS 줌 방지 */
@@ -401,23 +453,33 @@ export default function NaverBlogApp() {
         }
       `}</style>
 
-      <div style={s.header} className="nb-header">
+      <div style={{ ...s.header, background: t.pageBg, borderBottom: `1px solid ${t.pageBorder}` }} className="nb-header">
         <div style={s.headerLeft}>
-          <div style={s.logo}>N</div>
+          <div style={{ ...s.logo, background: t.logoBg, color: t.logoText }}>N</div>
           <div>
-            <div style={{ fontSize: 19, fontWeight: 540, letterSpacing: "-0.38px", lineHeight: 1.1, color: "#ffffff" }}>블로그 AI 작성기</div>
-            <div className="nb-header-sub" style={{ ...s.monoLabelLightMuted, marginTop: 4 }}>NAVER BLOG POST GENERATOR</div>
+            <div style={{ fontSize: 19, fontWeight: 540, letterSpacing: "-0.38px", lineHeight: 1.1, color: t.pageText }}>블로그 AI 작성기</div>
+            <div className="nb-header-sub" style={{ fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: t.pageMuted, marginTop: 4 }}>NAVER BLOG POST GENERATOR</div>
           </div>
         </div>
-        <div style={{ ...s.monoLabelLightMuted, fontSize: 10 }} className="nb-header-sub">V 2.0</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="nb-header-sub" style={{ fontFamily: FF_MONO, fontSize: 10, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: t.pageMuted }}>V 2.0</div>
+          <button onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: "transparent", border: `1px solid ${t.pageBorder}`,
+            color: t.pageText, cursor: "pointer",
+            fontSize: 15, lineHeight: 1,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: FF_SANS,
+          }}>{theme === "dark" ? "☀" : "☾"}</button>
+        </div>
       </div>
 
       <div style={s.body} className="nb-body">
 
         {/* Hero 라벨 + 섹션 타이틀 */}
         <div style={{ marginBottom: 36 }}>
-          <div className="nb-hero-label" style={{ ...s.monoLabelLight, fontSize: 11, marginBottom: 18 }}>/ 01 — CHOOSE CATEGORY</div>
-          <div style={{ fontSize: 38, fontWeight: 450, lineHeight: 1.08, letterSpacing: "-1.14px", fontFamily: FF_SANS, color: "#ffffff" }}>
+          <div className="nb-hero-label" style={{ fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: t.pageText, marginBottom: 18 }}>/ 01 — CHOOSE CATEGORY</div>
+          <div style={{ fontSize: 38, fontWeight: 450, lineHeight: 1.08, letterSpacing: "-1.14px", fontFamily: FF_SANS, color: t.pageText }}>
             어떤 글을<br />작성할까요?
           </div>
         </div>
@@ -429,9 +491,9 @@ export default function NaverBlogApp() {
             return (
               <button key={c.id} onClick={() => resetForm(c.id)} className="nb-tab" style={{
                 padding: "12px 22px 14px", borderRadius: 50,
-                border: active ? "1px solid #ffffff" : "1px solid rgba(255,255,255,0.25)",
-                background: active ? "#ffffff" : "transparent",
-                color: active ? "#000000" : "#ffffff",
+                border: active ? `1px solid ${t.tabActiveBg}` : `1px solid ${t.tabBorder}`,
+                background: active ? t.tabActiveBg : "transparent",
+                color: active ? t.tabActiveText : t.tabInactiveText,
                 fontWeight: 480, fontSize: 14, fontFamily: FF_SANS, letterSpacing: "-0.14px",
                 display: "flex", alignItems: "center", gap: 8, transition: "all 0.15s",
               }}>
@@ -577,11 +639,11 @@ export default function NaverBlogApp() {
         </div>
 
         {/* 생성 버튼 */}
-        <button className="nb-gen" style={{ ...s.genBtn, opacity: loading ? 0.6 : 1 }} onClick={handleGenerate} disabled={loading}>
+        <button className="nb-gen" style={{ ...s.genBtn, background: t.genBtnBg, color: t.genBtnText, opacity: loading ? 0.6 : 1 }} onClick={handleGenerate} disabled={loading}>
           {loading ? "WRITING..." : `${cat.label} 포스팅 생성하기 →`}
         </button>
 
-        {loading && <Spinner step={loadingStep} />}
+        {loading && <Spinner step={loadingStep} theme={t} />}
 
         {keywords.length > 0 && !loading && (
           <div style={{ ...s.card, marginTop: 20 }} className="nb-card">
