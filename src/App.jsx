@@ -205,7 +205,7 @@ const s = {
   monoLabelLightMuted: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" },
   body: { maxWidth: 780, margin: "0 auto", padding: "48px 24px 120px" },
   card: { background: COLORS.bg, borderRadius: 8, padding: 32, marginBottom: 14, border: `1px solid ${COLORS.border}` },
-  secTitle: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, color: COLORS.text, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.6px", textTransform: "uppercase" },
+  secTitle: { fontFamily: FF_SANS, fontSize: 24, fontWeight: 700, color: COLORS.text, marginBottom: 22, display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.26px", lineHeight: 1.35 },
   label: { fontFamily: FF_MONO, fontSize: 10, color: COLORS.muted, marginBottom: 8, display: "block", letterSpacing: "0.6px", textTransform: "uppercase", fontWeight: 400 },
   input: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", boxSizing: "border-box", fontFamily: FF_SANS, fontWeight: 400, letterSpacing: "-0.14px" },
   textarea: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", resize: "vertical", minHeight: 100, boxSizing: "border-box", lineHeight: 1.55, fontFamily: FF_SANS, fontWeight: 340, letterSpacing: "-0.14px" },
@@ -506,7 +506,7 @@ export default function NaverBlogApp() {
 
         {/* 기본 정보 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>/ 02 — {cat.label.toUpperCase()} INFO</div>
+          <div style={s.secTitle}>{cat.emoji} {cat.label} 정보</div>
 
           <div style={{ marginBottom: 12 }}>
             <label style={s.label}>{fc.nameLabel}</label>
@@ -574,7 +574,7 @@ export default function NaverBlogApp() {
 
         {/* 메모 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>/ 03 — MEMO</div>
+          <div style={s.secTitle}>📝 메모</div>
           <textarea style={s.textarea} placeholder={fc.memoPH} value={memo} onChange={e => setMemo(e.target.value)} />
           <div style={{ textAlign: "right", fontFamily: FF_MONO, fontSize: 10, letterSpacing: "0.5px", color: memo.length > 0 ? COLORS.text : COLORS.muted, marginTop: 8, textTransform: "uppercase" }}>
             {memo.length.toLocaleString()} CHAR
@@ -583,7 +583,7 @@ export default function NaverBlogApp() {
 
         {/* 사진 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>/ 04 — PHOTOS</div>
+          <div style={s.secTitle}>📸 사진 첨부</div>
           <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 16, fontWeight: 340, letterSpacing: "-0.14px" }}>사진을 올리면 AI가 내용을 파악해 글에 반영해요 · 드래그로 순서 변경 가능</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {photos.map((p, i) => (
@@ -625,7 +625,7 @@ export default function NaverBlogApp() {
         {/* 내 글 스타일 */}
         <div style={s.card} className="nb-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showStyle ? 18 : 0 }}>
-            <div style={{ ...s.secTitle, marginBottom: 0 }}>/ 05 — MY STYLE <span style={{ opacity: 0.45, marginLeft: 4 }}>(OPTIONAL)</span></div>
+            <div style={{ ...s.secTitle, marginBottom: 0 }}>✨ 내 글 스타일 <span style={{ opacity: 0.45, marginLeft: 4, fontSize: 14, fontWeight: 400 }}>(선택)</span></div>
             <button onClick={() => setShowStyle(!showStyle)} style={{ ...s.monoLabelMuted, fontSize: 10, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
               {showStyle ? "CLOSE" : "EXPAND"}
             </button>
@@ -647,7 +647,7 @@ export default function NaverBlogApp() {
 
         {keywords.length > 0 && !loading && (
           <div style={{ ...s.card, marginTop: 20 }} className="nb-card">
-            <div style={s.secTitle}>/ TRENDING KEYWORDS</div>
+            <div style={s.secTitle}>🔑 트렌드 키워드</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {keywords.map((kw, i) => <span key={i} style={s.kwTag}>#{kw}</span>)}
             </div>
@@ -660,10 +660,7 @@ export default function NaverBlogApp() {
             <div style={{ height: 8, background: GRADIENT }} />
             <div style={{ padding: 32 }}>
               <div className="nb-result-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
-                <div>
-                  <div style={{ ...s.monoLabel, fontSize: 11, marginBottom: 6 }}>/ COMPLETED POST</div>
-                  <div style={{ fontSize: 22, fontWeight: 540, letterSpacing: "-0.44px" }}>완성된 포스팅</div>
-                </div>
+                <div style={{ fontFamily: FF_SANS, fontSize: 24, fontWeight: 700, letterSpacing: "-0.26px", lineHeight: 1.35, color: COLORS.text }}>✅ 완성된 포스팅</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span style={{ fontFamily: FF_MONO, fontSize: 10, fontWeight: 400, color: COLORS.text, background: COLORS.accentLight, padding: "5px 12px 6px", borderRadius: 50, letterSpacing: "0.5px", textTransform: "uppercase" }}>
                     {result.length.toLocaleString()} CHAR
