@@ -61,11 +61,20 @@ const toNaverHTML = (text) => {
   return `<div style="font-family:'Pretendard','Apple SD Gothic Neo',sans-serif;color:#1a1a1a;max-width:720px;">${out.join("\n")}</div>`;
 };
 
+// Figma 디자인 시스템 — 흑백 only (컬러는 결과물 섹션 gradient로만)
 const COLORS = {
-  bg: "#faf9f6", card: "#ffffff", accent: "#2d6a4f",
-  accentLight: "#e8f4ed", accentMid: "#52b788",
-  text: "#1a1a1a", muted: "#7a7a7a", border: "#e8e4df",
+  bg: "#ffffff",
+  card: "#ffffff",
+  accent: "#000000",
+  accentLight: "rgba(0,0,0,0.05)",
+  accentMid: "rgba(0,0,0,0.40)",
+  text: "#000000",
+  muted: "rgba(0,0,0,0.55)",
+  border: "rgba(0,0,0,0.12)",
 };
+const GRADIENT = "linear-gradient(135deg,#00e599 0%,#ffeb3b 30%,#ab47bc 65%,#ec407a 100%)";
+const FF_SANS = "'Pretendard Variable','Pretendard','SF Pro Display',system-ui,helvetica,sans-serif";
+const FF_MONO = "'SF Mono','Menlo','Consolas',monospace";
 
 const CATEGORIES = [
   { id: "food",    emoji: "🍽", label: "음식",     sub: "맛집 · 카페" },
@@ -152,32 +161,35 @@ const SYSTEM_PROMPT = {
 };
 
 const s = {
-  app: { minHeight: "100vh", background: COLORS.bg, fontFamily: "'Pretendard','Apple SD Gothic Neo',sans-serif", color: COLORS.text },
-  header: { background: COLORS.card, borderBottom: `1px solid ${COLORS.border}`, padding: "18px 24px", display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 10 },
-  logo: { width: 32, height: 32, background: COLORS.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 16 },
-  body: { maxWidth: 760, margin: "0 auto", padding: "24px 20px 80px" },
-  card: { background: COLORS.card, borderRadius: 16, padding: "20px", marginBottom: 12, border: `1px solid ${COLORS.border}` },
-  secTitle: { fontSize: 13, fontWeight: 700, color: COLORS.accent, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 },
-  label: { fontSize: 12, color: COLORS.muted, marginBottom: 6, display: "block" },
-  input: { width: "100%", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${COLORS.border}`, fontSize: 14, color: COLORS.text, background: COLORS.bg, outline: "none", boxSizing: "border-box" },
-  textarea: { width: "100%", padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${COLORS.border}`, fontSize: 14, color: COLORS.text, background: COLORS.bg, outline: "none", resize: "vertical", minHeight: 90, boxSizing: "border-box", lineHeight: 1.6, fontFamily: "inherit" },
-  row: { display: "flex", gap: 10, marginBottom: 12 },
+  app: { minHeight: "100vh", background: COLORS.bg, fontFamily: FF_SANS, color: COLORS.text, fontFeatureSettings: '"kern"', WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale", letterSpacing: "-0.14px" },
+  header: { background: COLORS.bg, borderBottom: `1px solid ${COLORS.border}`, padding: "22px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10 },
+  headerLeft: { display: "flex", alignItems: "center", gap: 14 },
+  logo: { width: 36, height: 36, background: COLORS.text, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: COLORS.bg, fontSize: 15, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: FF_SANS },
+  monoLabel: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: COLORS.text },
+  monoLabelMuted: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: COLORS.muted },
+  body: { maxWidth: 780, margin: "0 auto", padding: "48px 24px 120px" },
+  card: { background: COLORS.bg, borderRadius: 8, padding: 32, marginBottom: 14, border: `1px solid ${COLORS.border}` },
+  secTitle: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, color: COLORS.text, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.6px", textTransform: "uppercase" },
+  label: { fontFamily: FF_MONO, fontSize: 10, color: COLORS.muted, marginBottom: 8, display: "block", letterSpacing: "0.6px", textTransform: "uppercase", fontWeight: 400 },
+  input: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", boxSizing: "border-box", fontFamily: FF_SANS, fontWeight: 400, letterSpacing: "-0.14px" },
+  textarea: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", resize: "vertical", minHeight: 100, boxSizing: "border-box", lineHeight: 1.55, fontFamily: FF_SANS, fontWeight: 340, letterSpacing: "-0.14px" },
+  row: { display: "flex", gap: 12, marginBottom: 14 },
   col: { flex: 1 },
-  genBtn: { width: "100%", padding: 15, borderRadius: 14, background: COLORS.accent, color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", marginTop: 8 },
-  copyBtn: { padding: "6px 12px", borderRadius: 8, background: COLORS.accentLight, color: COLORS.accent, fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer" },
-  kwTag: { padding: "4px 10px", borderRadius: 20, background: COLORS.accentLight, color: COLORS.accent, fontSize: 12, fontWeight: 600 },
-  photoThumb: { width: 72, height: 72, borderRadius: 10, objectFit: "cover", border: `1px solid ${COLORS.border}` },
-  addPhoto: { width: 72, height: 72, borderRadius: 10, border: `2px dashed ${COLORS.border}`, background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.muted, fontSize: 10, gap: 2 },
+  genBtn: { width: "100%", padding: "18px 32px 20px", borderRadius: 50, background: COLORS.text, color: COLORS.bg, fontSize: 16, fontWeight: 480, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.14px" },
+  copyBtn: { padding: "8px 18px 10px", borderRadius: 50, background: COLORS.bg, color: COLORS.text, fontSize: 13, fontWeight: 480, border: `1px solid ${COLORS.border}`, cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.14px" },
+  copyBtnDark: { padding: "8px 18px 10px", borderRadius: 50, background: COLORS.text, color: COLORS.bg, fontSize: 13, fontWeight: 480, border: "none", cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.14px" },
+  kwTag: { padding: "6px 14px 8px", borderRadius: 50, background: COLORS.accentLight, color: COLORS.text, fontSize: 12, fontWeight: 400, fontFamily: FF_SANS, letterSpacing: "-0.1px" },
+  photoThumb: { width: 88, height: 88, borderRadius: 8, objectFit: "cover", border: `1px solid ${COLORS.border}` },
+  addPhoto: { width: 88, height: 88, borderRadius: 8, border: `1px dashed ${COLORS.muted}`, background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.muted, fontSize: 10, gap: 3, fontFamily: FF_MONO, letterSpacing: "0.5px", textTransform: "uppercase" },
 };
 
 function Spinner({ step }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 0", gap: 12, color: COLORS.muted, fontSize: 14 }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      <div style={{ width: 32, height: 32, border: `3px solid ${COLORS.accentLight}`, borderTop: `3px solid ${COLORS.accent}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", gap: 16, color: COLORS.muted, fontSize: 13, fontFamily: FF_SANS }}>
+      <div style={{ width: 34, height: 34, border: `2px solid ${COLORS.accentLight}`, borderTop: `2px solid ${COLORS.text}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontWeight: 600, color: COLORS.accent, marginBottom: 4 }}>{step}</div>
-        <div>잠시만 기다려주세요...</div>
+        <div style={{ ...s.monoLabel, fontSize: 11, color: COLORS.text, marginBottom: 6 }}>{step}</div>
+        <div style={{ fontWeight: 340, letterSpacing: "-0.14px" }}>잠시만 기다려주세요...</div>
       </div>
     </div>
   );
@@ -345,77 +357,89 @@ export default function NaverBlogApp() {
   return (
     <div style={s.app}>
       <style>{`
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        *{box-sizing:border-box} input:focus,textarea:focus{border-color:#2d6a4f!important} button:active{transform:scale(0.97)}
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css');
+        *{box-sizing:border-box;font-feature-settings:"kern"}
+        html,body{margin:0;padding:0}
+        input,textarea,button,select{font-family:inherit;font-feature-settings:"kern"}
+        button{-webkit-tap-highlight-color:transparent;cursor:pointer}
+        button:active{transform:scale(0.98)}
+        /* Figma 디자인 시스템: dashed 2px focus — 에디터 셀렉션 핸들 호응 */
+        input:focus,textarea:focus,button:focus-visible{outline:2px dashed #000;outline-offset:3px;border-color:#000!important}
+        input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.5}
+        input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
+        input,textarea{font-size:16px}  /* iOS 줌 방지 */
         @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
-        @keyframes pdot{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
-        .shimbar{background:linear-gradient(90deg,#c8e6c9 25%,#e8f5e9 50%,#c8e6c9 75%);background-size:400px 100%;animation:shimmer 1.4s infinite;border-radius:6px}
-        input,textarea,button{font-family:inherit}
-        button{-webkit-tap-highlight-color:transparent}
+        @keyframes gshift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+        /* 모바일 (≤480px) */
+        @media (max-width:480px){
+          .nb-header{padding:16px 18px!important}
+          .nb-header-sub{display:none!important}
+          .nb-body{padding:28px 16px 80px!important}
+          .nb-card{padding:20px!important}
+          .nb-tab{padding:10px 16px 12px!important;font-size:13px!important}
+          .nb-gen{padding:16px 24px 18px!important;font-size:15px!important}
+          .nb-photo,.nb-addphoto{width:72px!important;height:72px!important}
+          .nb-hero-label{font-size:10px!important}
+          .nb-result-head{flex-wrap:wrap!important;gap:8px!important}
+        }
         /* 태블릿 / 아이패드 (481~900px) */
         @media (min-width:481px) and (max-width:900px){
-          .nb-body{max-width:720px!important;padding:28px 24px 100px!important}
-          .nb-card{padding:22px!important;border-radius:18px!important}
-          .nb-tab{padding:16px 8px!important;border-radius:16px!important}
-          .nb-tab-emoji{font-size:24px!important}
-          .nb-tab-label{font-size:14px!important}
-          .nb-input,.nb-textarea{font-size:15px!important;padding:13px 16px!important}
-          .nb-gen{padding:18px!important;font-size:16px!important}
-          .nb-photo,.nb-addphoto{width:88px!important;height:88px!important}
-          .nb-result{font-size:15px!important;line-height:1.9!important}
+          .nb-body{max-width:720px!important;padding:44px 28px 120px!important}
+          .nb-card{padding:30px!important}
+          .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
         }
         /* 데스크톱 (≥901px) */
         @media (min-width:901px){
-          .nb-body{max-width:760px!important;padding:32px 24px 120px!important}
-          .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
-        }
-        /* iOS 입력 줌 방지 — 전체 공통 */
-        input,textarea{font-size:16px}
-        /* 모바일 (≤480px) */
-        @media (max-width:480px){
-          .nb-body{padding:14px 12px 70px!important}
-          .nb-card{padding:16px!important;border-radius:14px!important;margin-bottom:10px!important}
-          .nb-header{padding:14px 16px!important}
-          .nb-tab{padding:11px 2px!important}
-          .nb-tab-emoji{font-size:18px!important}
-          .nb-tab-label{font-size:11px!important}
-          .nb-tab-sub{display:none!important}
-          .nb-gen{padding:14px!important;font-size:14px!important}
+          .nb-body{max-width:800px!important;padding:56px 32px 140px!important}
+          .nb-photo,.nb-addphoto{width:100px!important;height:100px!important}
         }
       `}</style>
 
       <div style={s.header} className="nb-header">
-        <div style={s.logo}>🍃</div>
-        <div>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>블로그 AI 작성기</div>
-          <div style={{ fontSize: 12, color: COLORS.muted }}>네이버 블로그 포스팅 자동 생성</div>
+        <div style={s.headerLeft}>
+          <div style={s.logo}>N</div>
+          <div>
+            <div style={{ fontSize: 19, fontWeight: 540, letterSpacing: "-0.38px", lineHeight: 1.1 }}>블로그 AI 작성기</div>
+            <div className="nb-header-sub" style={{ ...s.monoLabelMuted, marginTop: 4 }}>NAVER BLOG POST GENERATOR</div>
+          </div>
         </div>
+        <div style={{ ...s.monoLabelMuted, fontSize: 10 }} className="nb-header-sub">V 2.0</div>
       </div>
 
       <div style={s.body} className="nb-body">
 
-        {/* 카테고리 탭 */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          {CATEGORIES.map(c => (
-            <button key={c.id} onClick={() => resetForm(c.id)} className="nb-tab" style={{
-              flex: 1, padding: "12px 4px", borderRadius: 14, border: "none", cursor: "pointer",
-              background: category === c.id ? COLORS.accent : COLORS.card,
-              color: category === c.id ? "white" : COLORS.muted,
-              fontWeight: category === c.id ? 700 : 400,
-              fontSize: 12, transition: "all 0.2s",
-              boxShadow: category === c.id ? "0 2px 8px rgba(45,106,79,0.25)" : `0 0 0 1px ${COLORS.border}`,
-            }}>
-              <div className="nb-tab-emoji" style={{ fontSize: 20, marginBottom: 3 }}>{c.emoji}</div>
-              <div className="nb-tab-label">{c.label}</div>
-              <div className="nb-tab-sub" style={{ fontSize: 10, opacity: 0.75, marginTop: 1 }}>{c.sub}</div>
-            </button>
-          ))}
+        {/* Hero 라벨 + 섹션 타이틀 */}
+        <div style={{ marginBottom: 36 }}>
+          <div className="nb-hero-label" style={{ ...s.monoLabel, fontSize: 11, marginBottom: 18 }}>/ 01 — CHOOSE CATEGORY</div>
+          <div style={{ fontSize: 38, fontWeight: 450, lineHeight: 1.08, letterSpacing: "-1.14px", fontFamily: FF_SANS }}>
+            어떤 글을<br />작성할까요?
+          </div>
+        </div>
+
+        {/* 카테고리 탭 — Pill 50px 라디우스 */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 40, flexWrap: "wrap" }}>
+          {CATEGORIES.map(c => {
+            const active = category === c.id;
+            return (
+              <button key={c.id} onClick={() => resetForm(c.id)} className="nb-tab" style={{
+                padding: "12px 22px 14px", borderRadius: 50,
+                border: active ? `1px solid ${COLORS.text}` : `1px solid ${COLORS.border}`,
+                background: active ? COLORS.text : COLORS.bg,
+                color: active ? COLORS.bg : COLORS.text,
+                fontWeight: 480, fontSize: 14, fontFamily: FF_SANS, letterSpacing: "-0.14px",
+                display: "flex", alignItems: "center", gap: 8, transition: "all 0.15s",
+              }}>
+                <span style={{ fontSize: 15 }}>{c.emoji}</span>
+                <span>{c.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* 기본 정보 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>{cat.emoji} {cat.label} 정보</div>
+          <div style={s.secTitle}>/ 02 — {cat.label.toUpperCase()} INFO</div>
 
           <div style={{ marginBottom: 12 }}>
             <label style={s.label}>{fc.nameLabel}</label>
@@ -423,45 +447,48 @@ export default function NaverBlogApp() {
               <input style={{ ...s.input, flex: 1 }} placeholder={fc.namePH} value={name}
                 onChange={e => setName(e.target.value)} />
               <button onClick={fetchStoreInfo} disabled={searching || !name.trim()} style={{
-                padding: "0 16px", borderRadius: 10, border: "none",
-                background: searching || !name.trim() ? COLORS.border : COLORS.accent,
-                color: "white", fontSize: 13, fontWeight: 700, cursor: searching || !name.trim() ? "not-allowed" : "pointer",
-                whiteSpace: "nowrap", minWidth: 72,
-              }}>{searching ? "검색중" : "🔍 검색"}</button>
+                padding: "0 22px 2px", borderRadius: 50, border: "none",
+                background: searching || !name.trim() ? COLORS.accentLight : COLORS.text,
+                color: searching || !name.trim() ? COLORS.muted : COLORS.bg,
+                fontSize: 13, fontWeight: 480, cursor: searching || !name.trim() ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap", minWidth: 80, fontFamily: FF_SANS, letterSpacing: "-0.14px",
+              }}>{searching ? "SEARCHING" : "SEARCH →"}</button>
             </div>
           </div>
 
           {searching && (
-            <div style={{ padding: "12px 14px", background: COLORS.accentLight, borderRadius: 10, marginBottom: 12, fontSize: 13, color: COLORS.accent, display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 14, height: 14, border: `2px solid ${COLORS.accentMid}`, borderTop: `2px solid transparent`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+            <div style={{ padding: "14px 16px", background: COLORS.accentLight, borderRadius: 8, marginBottom: 14, fontSize: 13, color: COLORS.text, display: "flex", alignItems: "center", gap: 10, fontWeight: 340, letterSpacing: "-0.14px" }}>
+              <div style={{ width: 14, height: 14, border: `2px solid ${COLORS.text}`, borderTop: `2px solid transparent`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
               {SEARCH_LABEL[category]}
             </div>
           )}
           {searchError && !searching && (
-            <div style={{ padding: "10px 14px", background: "#fff4f4", color: "#c03030", borderRadius: 10, marginBottom: 12, fontSize: 12 }}>{searchError}</div>
+            <div style={{ padding: "12px 16px", background: COLORS.bg, border: `1px solid ${COLORS.text}`, borderRadius: 8, marginBottom: 14, fontSize: 12, color: COLORS.text, fontWeight: 340, letterSpacing: "-0.14px" }}>
+              <span style={{ ...s.monoLabel, fontSize: 10, marginRight: 6 }}>ERROR</span>{searchError}
+            </div>
           )}
           {storeInfo && !searching && (
-            <div style={{ padding: "12px 14px", background: COLORS.accentLight, borderRadius: 10, marginBottom: 12, fontSize: 13, lineHeight: 1.6, color: COLORS.text }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.accent, marginBottom: 6 }}>✓ 검색 결과 (자동 입력됨)</div>
-              {storeInfo.location && <div>📍 {storeInfo.location}</div>}
-              {storeInfo.hours && <div>🕐 {storeInfo.hours}</div>}
-              {storeInfo.closed && <div>🚫 휴무: {storeInfo.closed}</div>}
-              {storeInfo.phone && <div>📞 {storeInfo.phone}</div>}
-              {storeInfo.parking && <div>🅿 {storeInfo.parking}</div>}
-              {storeInfo.menus?.length > 0 && <div>🍽 {storeInfo.menus.join(", ")}</div>}
-              {storeInfo.summary && <div style={{ color: COLORS.muted, marginTop: 4 }}>{storeInfo.summary}</div>}
+            <div style={{ padding: "16px 18px", background: COLORS.accentLight, borderRadius: 8, marginBottom: 14, fontSize: 13, lineHeight: 1.75, color: COLORS.text, fontWeight: 340, letterSpacing: "-0.14px" }}>
+              <div style={{ ...s.monoLabel, fontSize: 10, marginBottom: 8 }}>✓ AUTO-FILLED FROM SEARCH</div>
+              {storeInfo.location && <div>· {storeInfo.location}</div>}
+              {storeInfo.hours && <div>· {storeInfo.hours}</div>}
+              {storeInfo.closed && <div>· 휴무 {storeInfo.closed}</div>}
+              {storeInfo.phone && <div>· {storeInfo.phone}</div>}
+              {storeInfo.parking && <div>· {storeInfo.parking}</div>}
+              {storeInfo.menus?.length > 0 && <div>· {storeInfo.menus.join(", ")}</div>}
+              {storeInfo.summary && <div style={{ color: COLORS.muted, marginTop: 6 }}>{storeInfo.summary}</div>}
             </div>
           )}
 
 
-                    <div style={s.row}>
+          <div style={s.row}>
             <div style={s.col}>
               <label style={s.label}>{fc.locLabel}</label>
               <input style={s.input} placeholder="자동 입력 또는 직접 입력" value={location} onChange={e => setLocation(e.target.value)} />
             </div>
             <div style={s.col}>
               <label style={s.label}>{fc.dateLabel}</label>
-              <input style={s.input} placeholder="예: 2025.04" value={date} onChange={e => setDate(e.target.value)} />
+              <input type="date" style={s.input} value={date} onChange={e => setDate(e.target.value)} />
             </div>
           </div>
 
@@ -480,17 +507,17 @@ export default function NaverBlogApp() {
 
         {/* 메모 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>📝 메모</div>
+          <div style={s.secTitle}>/ 03 — MEMO</div>
           <textarea style={s.textarea} placeholder={fc.memoPH} value={memo} onChange={e => setMemo(e.target.value)} />
-          <div style={{ textAlign: "right", fontSize: 11, color: memo.length > 0 ? COLORS.accent : COLORS.muted, marginTop: 5 }}>
-            {memo.length.toLocaleString()}자
+          <div style={{ textAlign: "right", fontFamily: FF_MONO, fontSize: 10, letterSpacing: "0.5px", color: memo.length > 0 ? COLORS.text : COLORS.muted, marginTop: 8, textTransform: "uppercase" }}>
+            {memo.length.toLocaleString()} CHAR
           </div>
         </div>
 
         {/* 사진 */}
         <div style={s.card} className="nb-card">
-          <div style={s.secTitle}>📸 사진 첨부</div>
-          <div style={{ fontSize: 12, color: COLORS.muted, marginBottom: 10 }}>사진을 올리면 AI가 내용을 파악해 글에 반영해요 · 드래그로 순서 변경 가능</div>
+          <div style={s.secTitle}>/ 04 — PHOTOS</div>
+          <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 16, fontWeight: 340, letterSpacing: "-0.14px" }}>사진을 올리면 AI가 내용을 파악해 글에 반영해요 · 드래그로 순서 변경 가능</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {photos.map((p, i) => (
               <div
@@ -512,13 +539,13 @@ export default function NaverBlogApp() {
                 }}
               >
                 <img src={p.url} alt={p.name} style={s.photoThumb} draggable={false} />
-                <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.55)", color: "white", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10 }}>{i + 1}</div>
+                <div style={{ position: "absolute", bottom: 6, left: 6, background: COLORS.text, color: COLORS.bg, fontSize: 10, fontWeight: 540, padding: "2px 8px", borderRadius: 50, fontFamily: FF_MONO, letterSpacing: "0.4px" }}>{i + 1}</div>
                 <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))}
-                  style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "#ff4d4d", color: "white", border: "none", fontSize: 11, cursor: "pointer", lineHeight: "20px", textAlign: "center", padding: 0 }}>✕</button>
+                  style={{ position: "absolute", top: -7, right: -7, width: 22, height: 22, borderRadius: "50%", background: COLORS.text, color: COLORS.bg, border: `2px solid ${COLORS.bg}`, fontSize: 11, cursor: "pointer", lineHeight: "18px", textAlign: "center", padding: 0, fontWeight: 540 }}>✕</button>
               </div>
             ))}
             <div style={s.addPhoto} onClick={() => fileRef.current.click()}>
-              <span style={{ fontSize: 22 }}>+</span><span>사진 추가</span>
+              <span style={{ fontSize: 22, fontFamily: FF_SANS, fontWeight: 320 }}>+</span><span>ADD</span>
             </div>
           </div>
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }}
@@ -530,53 +557,60 @@ export default function NaverBlogApp() {
 
         {/* 내 글 스타일 */}
         <div style={s.card} className="nb-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showStyle ? 12 : 0 }}>
-            <div style={s.secTitle}>✨ 내 글 스타일 (선택)</div>
-            <button onClick={() => setShowStyle(!showStyle)} style={{ fontSize: 12, color: COLORS.muted, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>
-              {showStyle ? "접기" : "펼치기"}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showStyle ? 18 : 0 }}>
+            <div style={{ ...s.secTitle, marginBottom: 0 }}>/ 05 — MY STYLE <span style={{ opacity: 0.45, marginLeft: 4 }}>(OPTIONAL)</span></div>
+            <button onClick={() => setShowStyle(!showStyle)} style={{ ...s.monoLabelMuted, fontSize: 10, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
+              {showStyle ? "CLOSE" : "EXPAND"}
             </button>
           </div>
           {showStyle && (
             <>
-              <div style={{ fontSize: 12, color: COLORS.muted, marginBottom: 8 }}>기존 블로그 글을 붙여넣으면 똑같은 말투로 써줘요</div>
-              <textarea style={{ ...s.textarea, minHeight: 120 }} placeholder="기존 블로그 글 붙여넣기..." value={myStyle} onChange={e => setMyStyle(e.target.value)} />
+              <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 12, fontWeight: 340, letterSpacing: "-0.14px" }}>기존 블로그 글을 붙여넣으면 똑같은 말투로 써줘요</div>
+              <textarea style={{ ...s.textarea, minHeight: 130 }} placeholder="기존 블로그 글 붙여넣기..." value={myStyle} onChange={e => setMyStyle(e.target.value)} />
             </>
           )}
         </div>
 
         {/* 생성 버튼 */}
-        <button style={{ ...s.genBtn, opacity: loading ? 0.7 : 1 }} onClick={handleGenerate} disabled={loading}>
-          {loading ? "⏳ 작성 중..." : `🚀 ${cat.label} 포스팅 생성하기`}
+        <button className="nb-gen" style={{ ...s.genBtn, opacity: loading ? 0.6 : 1 }} onClick={handleGenerate} disabled={loading}>
+          {loading ? "WRITING..." : `${cat.label} 포스팅 생성하기 →`}
         </button>
 
         {loading && <Spinner step={loadingStep} />}
 
         {keywords.length > 0 && !loading && (
-          <div style={{ ...s.card, marginTop: 16 }}>
-            <div style={s.secTitle}>🔑 수집된 트렌드 키워드</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <div style={{ ...s.card, marginTop: 20 }} className="nb-card">
+            <div style={s.secTitle}>/ TRENDING KEYWORDS</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {keywords.map((kw, i) => <span key={i} style={s.kwTag}>#{kw}</span>)}
             </div>
           </div>
         )}
 
         {result && !loading && (
-          <div style={{ background: COLORS.card, borderRadius: 16, padding: "20px", border: `1.5px solid ${COLORS.accentMid}`, marginTop: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.accent }}>✅ 완성된 포스팅</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "white", background: result.length >= 1500 ? COLORS.accent : "#f0a500", padding: "3px 10px", borderRadius: 20 }}>
-                  {result.length.toLocaleString()}자
-                </span>
-                <button style={s.copyBtn} onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
-                  {copied ? "✓ 복사됨" : "텍스트 복사"}
-                </button>
-                <button style={{ ...s.copyBtn, background: COLORS.accent, color: "white" }} onClick={copyHTML}>
-                  {htmlCopied ? "✓ 복사됨" : "📋 에디터용 복사"}
-                </button>
+          <div style={{ background: COLORS.bg, borderRadius: 8, border: `1px solid ${COLORS.text}`, marginTop: 20, overflow: "hidden" }} className="nb-card-result">
+            {/* Figma 디자인 시스템의 vibrant gradient — 유일한 컬러 요소 */}
+            <div style={{ height: 8, background: GRADIENT }} />
+            <div style={{ padding: 32 }}>
+              <div className="nb-result-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
+                <div>
+                  <div style={{ ...s.monoLabel, fontSize: 11, marginBottom: 6 }}>/ COMPLETED POST</div>
+                  <div style={{ fontSize: 22, fontWeight: 540, letterSpacing: "-0.44px" }}>완성된 포스팅</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: FF_MONO, fontSize: 10, fontWeight: 400, color: COLORS.text, background: COLORS.accentLight, padding: "5px 12px 6px", borderRadius: 50, letterSpacing: "0.5px", textTransform: "uppercase" }}>
+                    {result.length.toLocaleString()} CHAR
+                  </span>
+                  <button style={s.copyBtn} onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
+                    {copied ? "✓ COPIED" : "COPY TEXT"}
+                  </button>
+                  <button style={s.copyBtnDark} onClick={copyHTML}>
+                    {htmlCopied ? "✓ COPIED" : "COPY HTML"}
+                  </button>
+                </div>
               </div>
+              <div style={{ fontSize: 15, lineHeight: 1.9, whiteSpace: "pre-wrap", wordBreak: "break-word", fontWeight: 340, letterSpacing: "-0.14px", color: COLORS.text }}>{result}</div>
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.85, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{result}</div>
           </div>
         )}
 
