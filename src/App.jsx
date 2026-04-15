@@ -1,5 +1,30 @@
 import { useState, useRef, useEffect } from "react";
 
+const DEFAULT_MY_STYLE = `앞으로 내 블로그 포스팅 초안을 작성하거나 다듬을 때는 아래의 '새밍이 블로그 글 스타일'을 반드시 지켜서 작성해 줘.
+
+[내용]
+1. 인사말 및 오프닝
+- 항상 "안녕하세요 새밍이입니다!!" 또는 "안녕하세요 새밍이 입니닷!!"과 같이 밝은 인사로 시작할 것.
+- 바로 본론으로 들어가지 말고, 방문하게 된 계기나 일상 에피소드(예: 가족/동생과의 나들이, 날씨 이야기, 평소 입맛 취향 등)를 가볍게 풀면서 자연스럽게 주제를 소개할 것.
+
+2. 어조 및 문체 (Tone & Manner)
+- 딱딱한 문장 대신 '~입니당', '~입니닷', '~더라구요', '~했어요', '~아시죠~?' 등 귀엽고 친밀감 있는 대화체를 사용할 것.
+- 느낌표(!!, !)와 물결표(~)를 넉넉하게 사용하여 블로거 특유의 높은 텐션과 신나는 감정을 표현할 것.
+- 'ㅎㅎㅎ', 'ㅋㅋ', '쿠쿠', '룰루랄라', '아차차', '총총' 같은 가벼운 의성어/의태어와 혼잣말을 자연스럽게 섞을 것.
+
+3. 이모지 및 특수기호 활용
+- 문장 끝이나 감정이 강조되는 부분에 스마일리 기호 :) 와 감정 이모지(😭, 🥰, 👏, 😎, 😆)를 적절히 활용할 것.
+- 감격스럽거나 살짝 아쉬운 감정, 여운을 줄 때는 쉼표나 마침표를 연달아 쓰는 말줄임 표현(,, 또는 ..)을 사용할 것 (예: 눈물이,, 먹고 싶다😭).
+
+4. 정보 전달 및 가독성 (구조화)
+- 포스팅 상단에 본문과 관련된 해시태그(#내돈내산, #지역맛집, #메뉴이름 등)를 모아서 작성할 것.
+- 영업시간, 라스트오더, 체크인/체크아웃, 위치 등 핵심 정보는 대괄호 [ ]나 꺾쇠 < >를 사용해 눈에 띄게 정리할 것 (예: [영업시간: 화~일 11:00~23:00]).
+- 소개할 메뉴나 공간이 많을 경우 [리뷰 순서]를 1, 2, 3 번호로 매겨서 가독성 있게 구조를 잡을 것.
+
+5. 방문자 꿀팁 및 주관적인 찐 후기
+- 직접 겪어본 사람만 알 수 있는 꿀팁(예: "주차는 공영주차장에", "본점 옆에 1, 2호점이 붙어있으니 헷갈리지 마세요")이나 추천 대상(데이트 장소 추천, 아이랑 가기 좋은 곳 등)을 꼭 포함할 것.
+- "내돈내산이며 제 개인적인 입맛에 맞춰 리뷰합니다"와 같은 솔직하고 진정성 있는 멘트를 곁들일 것.`;
+
 // 다크/라이트 테마 — 카드는 양쪽 모두 흰색 유지, 페이지 chrome만 반전
 const THEMES = {
   dark: {
@@ -256,8 +281,19 @@ export default function NaverBlogApp() {
   const [menus, setMenus]       = useState("");
   const [target, setTarget]     = useState("");
   const [memo, setMemo]         = useState("");
-  const [myStyle, setMyStyle]   = useState("");
-  const [showStyle, setShowStyle] = useState(false);
+  const [myStyle, setMyStyle]   = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("nb-my-style");
+      return saved !== null ? saved : DEFAULT_MY_STYLE;
+    }
+    return DEFAULT_MY_STYLE;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("nb-my-style", myStyle);
+    }
+  }, [myStyle]);
+  const [showStyle, setShowStyle] = useState(true);
   const [photos, setPhotos]     = useState([]);
   const [loading, setLoading]   = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
@@ -632,8 +668,13 @@ export default function NaverBlogApp() {
           </div>
           {showStyle && (
             <>
-              <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 12, fontWeight: 340, letterSpacing: "-0.14px" }}>기존 블로그 글을 붙여넣으면 똑같은 말투로 써줘요</div>
-              <textarea style={{ ...s.textarea, minHeight: 130 }} placeholder="기존 블로그 글 붙여넣기..." value={myStyle} onChange={e => setMyStyle(e.target.value)} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 12 }}>
+                <div style={{ fontSize: 13, color: COLORS.muted, fontWeight: 340, letterSpacing: "-0.14px" }}>포스팅 작성 시 이 스타일을 자동 반영해요 · 자유롭게 수정 가능</div>
+                {myStyle !== DEFAULT_MY_STYLE && (
+                  <button onClick={() => setMyStyle(DEFAULT_MY_STYLE)} style={{ ...s.monoLabelMuted, fontSize: 10, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, whiteSpace: "nowrap" }}>RESET</button>
+                )}
+              </div>
+              <textarea style={{ ...s.textarea, minHeight: 260 }} placeholder="기존 블로그 글 붙여넣기..." value={myStyle} onChange={e => setMyStyle(e.target.value)} />
             </>
           )}
         </div>
