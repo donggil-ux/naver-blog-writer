@@ -4,7 +4,7 @@
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white)
-![Anthropic](https://img.shields.io/badge/Claude-Sonnet_4-D97757)
+![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?logo=google&logoColor=white)
 
 ---
 
@@ -47,7 +47,7 @@
 
 ### 사전 준비
 - **Node.js** 18 이상
-- **Anthropic API 키** — [console.anthropic.com](https://console.anthropic.com)에서 발급
+- **Google Gemini API 키** — [Google AI Studio](https://aistudio.google.com/apikey)에서 무료 발급
 
 ### 설치
 
@@ -59,17 +59,18 @@ npm install
 
 ### 환경변수 설정
 
-API 호출은 `api/anthropic.js` 서버리스 프록시를 경유하므로 **`VITE_` 프리픽스 없이** 서버 전용으로 설정합니다.
+API 호출은 `api/gemini.js` 서버리스 프록시를 경유하므로 **`VITE_` 프리픽스 없이** 서버 전용으로 설정합니다.
 
 **로컬 개발 (`.env` 파일):**
 ```env
-ANTHROPIC_API_KEY=sk-ant-xxx...
+Google_API_KEY=AIza...
 ```
 
-**Vercel 배포:** 대시보드 → Settings → Environment Variables에서 `ANTHROPIC_API_KEY` 추가 → 재배포
+**Vercel 배포:** 대시보드 → Settings → Environment Variables에서 `Google_API_KEY` 추가 → 재배포
 
 > ⚠️ `.env` 파일은 절대 커밋하지 마세요 (`.gitignore`에 포함되어 있습니다)
 > 🔒 API 키는 서버에서만 사용되며 브라우저에 노출되지 않습니다
+> 💡 Gemini 2.5 Flash는 **무료 티어** (분당 15회 / 일 1,500회)로 개인 블로그 용도에 충분합니다
 
 ### 실행
 
@@ -96,8 +97,9 @@ npm run preview    # 빌드 결과 미리보기
 | **언어** | JSX |
 | **스타일** | CSS-in-JS 인라인 스타일 + CSS 미디어 쿼리 |
 | **폰트** | Pretendard (CDN) |
-| **AI 모델** | `claude-sonnet-4-20250514` |
-| **웹 검색** | `web_search_20250305` (Anthropic 서버사이드 툴) |
+| **AI 모델** | `gemini-2.5-flash` (Google) |
+| **웹 검색** | Google Search grounding (`google_search` 툴) |
+| **API 프록시** | Vercel Serverless (`api/gemini.js`) |
 | **배포** | Vercel |
 
 ---
@@ -107,7 +109,7 @@ npm run preview    # 빌드 결과 미리보기
 ```
 naver-blog-writer/
 ├── api/
-│   └── anthropic.js  # Vercel 서버리스 프록시 (CORS 회피 + API 키 보호)
+│   └── gemini.js     # Vercel 서버리스 프록시 (Gemini API 호출 + 키 보호)
 ├── public/
 │   └── favicon.svg
 ├── src/
@@ -128,15 +130,15 @@ naver-blog-writer/
 ```
 [사용자 입력]
     ↓
-[선택] 🔍 가게 검색 → web_search_20250305 → JSON 파싱 → 폼 자동 입력
+[선택] 🔍 가게 검색 → gemini-2.5-flash + Google Search → JSON 파싱 → 폼 자동 입력
     ↓
 🚀 생성 버튼
     ↓
 1️⃣ 트렌드 키워드 수집
-   claude-sonnet-4 + web_search → JSON 배열
+   gemini-2.5-flash + Google Search grounding → JSON 배열
     ↓
 2️⃣ 포스팅 작성
-   claude-sonnet-4 (max_tokens 3000)
+   gemini-2.5-flash (maxOutputTokens 8000)
    + 카테고리별 시스템 프롬프트
    + 내 글 스타일 가이드
     ↓
@@ -154,7 +156,7 @@ naver-blog-writer/
 | **빌드 커맨드** | `npm run build` |
 | **출력 디렉토리** | `dist` |
 | **루트 디렉토리** | `.` (리포 루트) |
-| **환경변수** | `VITE_ANTHROPIC_API_KEY` |
+| **환경변수** | `Google_API_KEY` |
 | **프레임워크** | Vite (자동 감지) |
 
 ---
@@ -176,11 +178,10 @@ naver-blog-writer/
 
 ## ⚠️ 보안 주의사항
 
-이 프로젝트는 `anthropic-dangerous-direct-browser-calls: true` 헤더를 사용해 브라우저에서 직접 Anthropic API를 호출합니다.
-
-- ✅ **개인용·학습용**으로 사용하세요
-- ❌ API 키가 브라우저에 노출되므로 **공개 배포 시 프록시 서버 경유**를 권장합니다
-- ✅ Vercel 배포 시에도 개인 계정에서 본인만 사용하는 용도로 한정하세요
+- ✅ API 키는 Vercel 서버리스 함수(`api/gemini.js`)에서만 사용되며 **브라우저에 노출되지 않습니다**
+- ✅ CORS 이슈도 같은 도메인 경유로 해결됨
+- ⚠️ 공개 배포 시에는 본인만 쓸 수 있도록 Vercel의 **Password Protection**이나 **Deployment Protection** 기능을 활성화하는 것을 권장합니다 (남용 방지)
+- 💡 Gemini 2.5 Flash는 **무료 티어**가 넉넉하지만 도용 방지를 위해 접근 제어는 해두세요
 
 ---
 

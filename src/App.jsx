@@ -244,28 +244,29 @@ export default function NaverBlogApp() {
     setPhotos([]); setStoreInfo(null); setSearchError(""); setResult(null); setKeywords([]);
   };
 
-  // Vercel 서버리스 프록시 경유 — CORS 이슈 회피 + API 키 서버 보관
-  const callAnthropic = async (payload) => {
-    const res = await fetch("/api/anthropic", {
+  // Vercel 서버리스 프록시 경유 (Google Gemini API)
+  const callGemini = async (payload) => {
+    const res = await fetch("/api/gemini", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-    return data;
+    // Gemini 응답에서 모든 text part를 합쳐서 반환
+    const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join("") || "";
+    return text;
   };
 
-  // 단일 API 호출로 웹검색 (web_search_20250305는 서버사이드 툴 — 루프 불필요)
-  const searchWithWeb = async (userMsg, system, maxTokens = 800) => {
-    const data = await callAnthropic({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: "user", content: userMsg }],
-      tools: [{ type: "web_search_20250305", name: "web_search" }],
+  // Google Search grounding으로 웹검색 + LLM 응답을 한 번에
+  const searchWithWeb = async (userMsg, system, maxTokens = 1200) => {
+    return await callGemini({
+      model: "gemini-2.5-flash",
+      systemInstruction: { parts: [{ text: system }] },
+      contents: [{ role: "user", parts: [{ text: userMsg }] }],
+      generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
+      tools: [{ google_search: {} }],
     });
-    return data.content?.filter(b => b.type === "text").map(b => b.text).join("") || "";
   };
 
   const fetchStoreInfo = async () => {
@@ -327,13 +328,13 @@ export default function NaverBlogApp() {
         daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kws.length?kws.join(", "):"SEO에 맞게 자유롭게"}`,
       }[category];
 
-      const d = await callAnthropic({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 3000,
-        system: SYSTEM_PROMPT[category](styleGuide),
-        messages: [{ role: "user", content: `아래 정보로 네이버 블로그 포스팅 작성해줘.\n${userMsg}` }],
+      const text = await callGemini({
+        model: "gemini-2.5-flash",
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT[category](styleGuide) }] },
+        contents: [{ role: "user", parts: [{ text: `아래 정보로 네이버 블로그 포스팅 작성해줘.\n${userMsg}` }] }],
+        generationConfig: { maxOutputTokens: 8000, temperature: 0.85 },
       });
-      setResult(d.content?.filter(b => b.type === "text").map(b => b.text).join("") || "");
+      setResult(text);
     } catch (e) { console.error(e); alert(`오류: ${e.message}`); }
     finally { setLoading(false); setLoadingStep(""); }
   };
