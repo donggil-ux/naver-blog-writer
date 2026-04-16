@@ -706,7 +706,7 @@ export default function NaverBlogApp() {
             <label style={s.label}>{fc.menusLabel}</label>
             <input style={s.input} placeholder={fc.menusPH} value={menus} onChange={e => setMenus(e.target.value)} />
             <button onClick={() => receiptRef.current?.click()} disabled={scanning} style={{
-              marginTop: 16, padding: "12px 24px 14px", borderRadius: 50, border: `1px solid ${COLORS.border}`,
+              marginTop: 16, padding: "12px 24px 14px", borderRadius: 50, border: `2px solid ${COLORS.text}`,
               background: COLORS.bg, color: COLORS.text, width: "100%",
               fontSize: 14, fontWeight: 480, cursor: scanning ? "not-allowed" : "pointer",
               fontFamily: FF_SANS, letterSpacing: "-0.14px",
