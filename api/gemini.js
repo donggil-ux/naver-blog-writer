@@ -1,6 +1,6 @@
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const FALLBACK_MODEL = "gemini-2.0-flash";
+const FALLBACK_MODEL = "gemini-2.5-flash-lite";
 
 async function callGemini(apiKey, model, payload) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    const { model = "gemini-2.0-flash", ...payload } = body || {};
+    const { model = "gemini-2.5-flash", ...payload } = body || {};
 
     // 1차 시도 — 요청된 모델
     const MAX_RETRIES = 2;
