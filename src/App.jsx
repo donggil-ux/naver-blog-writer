@@ -362,7 +362,7 @@ export default function NaverBlogApp() {
   // Google Search grounding으로 웹검색 + LLM 응답을 한 번에
   const searchWithWeb = async (userMsg, system, maxTokens = 1200) => {
     return await callGemini({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       systemInstruction: { parts: [{ text: system }] },
       contents: [{ role: "user", parts: [{ text: userMsg }] }],
       generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
@@ -430,7 +430,7 @@ export default function NaverBlogApp() {
       }[category];
 
       const text = await callGemini({
-        model: "gemini-2.5-flash",
+        model: "gemini-2.0-flash",
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT[category](styleGuide) }] },
         contents: [{ role: "user", parts: [{ text: `아래 정보로 네이버 블로그 포스팅 작성해줘.\n${userMsg}` }] }],
         generationConfig: { maxOutputTokens: 8000, temperature: 0.85 },
