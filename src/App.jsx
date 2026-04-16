@@ -517,11 +517,10 @@ export default function NaverBlogApp() {
 
       <div style={s.body} className="nb-body">
 
-        {/* Hero 라벨 + 섹션 타이틀 */}
+        {/* Hero 타이틀 */}
         <div style={{ marginBottom: 36 }}>
-          <div className="nb-hero-label" style={{ fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: t.pageText, marginBottom: 18 }}>/ 01 — CHOOSE CATEGORY</div>
-          <div className="nb-hero-title" style={{ fontSize: 38, fontWeight: 450, lineHeight: 1.08, letterSpacing: "-1.14px", fontFamily: FF_SANS, color: t.pageText }}>
-            어떤 글을<br />작성할까요?
+          <div className="nb-hero-title" style={{ fontSize: 38, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-1.14px", fontFamily: FF_SANS, color: t.pageText }}>
+            어떤 글을 작성할까요?
           </div>
         </div>
 
