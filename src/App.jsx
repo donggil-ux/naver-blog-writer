@@ -370,16 +370,38 @@ export default function NaverBlogApp() {
     });
   };
 
+  // 쿼리 정규화 — 대소문자/공백 관계없이 검색
+  const normalizeQuery = (q) => q.trim().replace(/\s+/g, " ");
+  const queryVariants = (q) => {
+    const base = normalizeQuery(q);
+    const noSpace = base.replace(/\s/g, "");
+    // 영문↔한글 경계에 공백 삽입 (예: THE나은버거 → THE 나은버거)
+    const withGap = noSpace.replace(/([a-zA-Z])([가-힣])/g, "$1 $2").replace(/([가-힣])([a-zA-Z])/g, "$1 $2");
+    const variants = [base];
+    if (noSpace !== base) variants.push(noSpace);
+    if (withGap !== base && withGap !== noSpace) variants.push(withGap);
+    return variants;
+  };
+
+  const searchNaver = async (query) => {
+    const res = await fetch(`/api/naver-local?query=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data.items || [];
+  };
+
   // 네이버 지역 검색 API — 정확한 가게 정보 직접 조회
   const fetchStoreInfo = async () => {
     const label = FIELD_CONFIG[category].nameLabel.replace(" *", "");
     if (!name.trim()) return alert(`${label}을 입력해주세요!`);
     setSearching(true); setStoreInfo(null); setSearchError("");
     try {
-      const res = await fetch(`/api/naver-local?query=${encodeURIComponent(name)}`);
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      const items = data.items || [];
+      // 여러 변형으로 시도 — 첫 번째 결과가 나오면 즉시 사용
+      let items = [];
+      for (const q of queryVariants(name)) {
+        items = await searchNaver(q);
+        if (items.length > 0) break;
+      }
       if (items.length === 0) {
         setSearchError("정보를 찾지 못했어요. 이름을 더 구체적으로 입력해보세요.");
         return;
