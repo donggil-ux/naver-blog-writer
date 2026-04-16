@@ -305,7 +305,9 @@ export default function NaverBlogApp() {
   const [storeInfo, setStoreInfo] = useState(null);
   const [searchError, setSearchError] = useState("");
   const fileRef = useRef();
+  const receiptRef = useRef();
   const dragIdx = useRef(null);
+  const [scanning, setScanning] = useState(false);
   const [dragOver, setDragOver] = useState(null);
 
   const reorderPhotos = (from, to) => {
@@ -445,6 +447,41 @@ export default function NaverBlogApp() {
     } catch (e) {
       setSearchError(`검색 오류: ${e.message}`);
     } finally { setSearching(false); }
+  };
+
+  // 영수증 사진 → Gemini Vision → 메뉴/가격 자동 추출
+  const scanReceipt = (file) => {
+    if (!file) return;
+    setScanning(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result.split(",")[1];
+        const mimeType = file.type || "image/jpeg";
+        const text = await callGemini({
+          model: "gemini-2.5-flash",
+          contents: [{
+            role: "user",
+            parts: [
+              { text: '이 영수증/메뉴판 사진에서 메뉴명과 가격을 추출해서 "메뉴명 가격원, 메뉴명 가격원" 형식의 한 줄 텍스트로만 반환해. 마크다운이나 설명 없이 결과만.' },
+              { inlineData: { mimeType, data: base64 } },
+            ],
+          }],
+          generationConfig: { maxOutputTokens: 500, temperature: 0.2 },
+        });
+        if (text.trim()) {
+          setMenus(text.trim());
+        } else {
+          alert("메뉴/가격을 인식하지 못했어요. 직접 입력해주세요.");
+        }
+      } catch (e) {
+        alert(`영수증 인식 실패: ${e.message}`);
+      } finally {
+        setScanning(false);
+        if (receiptRef.current) receiptRef.current.value = "";
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleGenerate = async () => {
@@ -667,7 +704,18 @@ export default function NaverBlogApp() {
 
           <div style={{ marginBottom: fc.showTarget ? 12 : 0 }}>
             <label style={s.label}>{fc.menusLabel}</label>
-            <input style={s.input} placeholder={fc.menusPH} value={menus} onChange={e => setMenus(e.target.value)} />
+            <div style={{ display: "flex", gap: 8 }}>
+              <input style={{ ...s.input, flex: 1 }} placeholder={fc.menusPH} value={menus} onChange={e => setMenus(e.target.value)} />
+              <button onClick={() => receiptRef.current?.click()} disabled={scanning} style={{
+                padding: "0 16px", borderRadius: 50, border: "none",
+                background: scanning ? COLORS.accentLight : COLORS.text,
+                color: scanning ? COLORS.muted : COLORS.bg,
+                fontSize: 12, fontWeight: 480, cursor: scanning ? "not-allowed" : "pointer",
+                whiteSpace: "nowrap", minWidth: 90, fontFamily: FF_SANS,
+              }}>{scanning ? "스캔중..." : "📷 영수증"}</button>
+            </div>
+            <input ref={receiptRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+              onChange={e => { if (e.target.files?.[0]) scanReceipt(e.target.files[0]); }} />
           </div>
 
           {fc.showTarget && (
