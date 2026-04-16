@@ -370,37 +370,34 @@ export default function NaverBlogApp() {
     });
   };
 
+  // 네이버 지역 검색 API — 정확한 가게 정보 직접 조회
   const fetchStoreInfo = async () => {
     const label = FIELD_CONFIG[category].nameLabel.replace(" *", "");
     if (!name.trim()) return alert(`${label}을 입력해주세요!`);
     setSearching(true); setStoreInfo(null); setSearchError("");
     try {
-      const system = `너는 한국 장소/가게 정보 수집 전문가야.
-반드시 웹 검색을 통해 정보를 찾아서, 아래 JSON 형식으로만 응답해.
-마크다운 없이 { 로 시작하는 JSON 한 줄만 출력해.
-{"name":"","location":"","hours":"","closed":"","menus":[],"parking":"","phone":"","summary":""}
-없는 정보는 빈 값으로 남겨.`;
-      const query = `${name} 주소 영업시간 메뉴 전화번호`;
-      const text = await searchWithWeb(query, system, 600);
-      // JSON 추출 시도
-      const match = text.match(/\{[\s\S]*?\}/);
-      if (match) {
-        try {
-          const info = JSON.parse(match[0]);
-          setStoreInfo(info);
-          if (info.location) setLocation(info.location);
-          if (info.menus?.length) setMenus(info.menus.join(", "));
-        } catch {
-          setSearchError("정보를 파싱하지 못했어요. 직접 입력해주세요.");
-        }
-      } else {
-        // JSON이 아닌 일반 텍스트로 왔을 때 — 그대로 summary에 담기
-        if (text.trim()) {
-          setStoreInfo({ name, location: "", hours: "", closed: "", menus: [], parking: "", phone: "", summary: text.slice(0, 200) });
-        } else {
-          setSearchError("정보를 찾지 못했어요. 이름을 더 구체적으로 입력해보세요.");
-        }
+      const res = await fetch(`/api/naver-local?query=${encodeURIComponent(name)}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      const items = data.items || [];
+      if (items.length === 0) {
+        setSearchError("정보를 찾지 못했어요. 이름을 더 구체적으로 입력해보세요.");
+        return;
       }
+      const top = items[0];
+      const cleanTitle = top.title.replace(/<[^>]*>/g, ""); // HTML 태그 제거
+      const info = {
+        name: cleanTitle,
+        location: top.roadAddress || top.address || "",
+        hours: "",
+        closed: "",
+        menus: [],
+        parking: "",
+        phone: top.telephone || "",
+        summary: top.category || "",
+      };
+      setStoreInfo(info);
+      if (info.location) setLocation(info.location);
     } catch (e) {
       setSearchError(`검색 오류: ${e.message}`);
     } finally { setSearching(false); }
@@ -411,12 +408,19 @@ export default function NaverBlogApp() {
     if (!name.trim()) return alert(`${label}을 입력해주세요!`);
     setLoading(true); setResult(null); setKeywords([]);
     try {
-      setLoadingStep("🔍 트렌드 키워드 수집 중...");
-      const kwSystem = `너는 네이버 블로그 SEO 전문가야. 웹 검색으로 인기 키워드를 찾아서 JSON 배열로만 반환해. 마크다운 없이 [ 로 시작하는 배열만. 예: ["강릉막국수","강릉맛집"]`;
+      // 네이버 블로그 검색 → 인기 글 제목에서 키워드 추출 (Gemini 호출 없음)
+      setLoadingStep("🔍 네이버 트렌드 키워드 수집 중...");
       const kwCat = category === "food" ? "맛집" : category === "culture" ? "전시공연" : "리뷰";
-      const kwText = await searchWithWeb(`"${name}" ${kwCat} 네이버 블로그 상위 노출 인기 키워드`, kwSystem, 400);
-      const kwMatch = kwText.match(/\[[\s\S]*?\]/);
-      const kws = kwMatch ? (() => { try { return JSON.parse(kwMatch[0]); } catch { return []; } })() : [];
+      const kwRes = await fetch(`/api/naver-blog?query=${encodeURIComponent(`${name} ${kwCat}`)}`);
+      const kwData = await kwRes.json();
+      const blogItems = kwData.items || [];
+      // 블로그 제목+설명에서 키워드 추출 (HTML 태그 제거 → 2글자 이상 한글 단어 → 빈도 상위)
+      const allText = blogItems.map(b => `${b.title} ${b.description}`.replace(/<[^>]*>/g, "")).join(" ");
+      const words = allText.match(/[가-힣]{2,}/g) || [];
+      const stopWords = new Set(["그리고","하지만","그래서","근데","진짜","정말","너무","아주","매우","이번","오늘","여기","거기","우리","저희","하는","있는","없는","같은","이런","그런","되는","했는","합니다","입니다","이에요","해요","있어요","없어요","했어요","됩니다","블로그","리뷰","후기","포스팅","방문"]);
+      const freq = {};
+      words.forEach(w => { if (!stopWords.has(w) && w !== name) freq[w] = (freq[w] || 0) + 1; });
+      const kws = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([w]) => w);
       setKeywords(kws);
 
       setLoadingStep("✍️ 포스팅 작성 중...");
