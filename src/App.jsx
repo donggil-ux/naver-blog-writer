@@ -231,7 +231,7 @@ const s = {
   body: { maxWidth: 780, margin: "0 auto", padding: "48px 24px 120px" },
   card: { background: COLORS.bg, borderRadius: 8, padding: 32, marginBottom: 14, border: `1px solid ${COLORS.border}` },
   secTitle: { fontFamily: FF_SANS, fontSize: 24, fontWeight: 700, color: COLORS.text, marginBottom: 22, display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.26px", lineHeight: 1.35 },
-  label: { fontFamily: FF_MONO, fontSize: 10, color: COLORS.muted, marginBottom: 8, display: "block", letterSpacing: "0.6px", textTransform: "uppercase", fontWeight: 400 },
+  label: { fontFamily: FF_SANS, fontSize: 14, color: COLORS.muted, marginBottom: 8, display: "block", letterSpacing: "-0.14px", fontWeight: 600 },
   input: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", boxSizing: "border-box", fontFamily: FF_SANS, fontWeight: 400, letterSpacing: "-0.14px" },
   textarea: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", resize: "vertical", minHeight: 100, boxSizing: "border-box", lineHeight: 1.55, fontFamily: FF_SANS, fontWeight: 340, letterSpacing: "-0.14px" },
   row: { display: "flex", gap: 12, marginBottom: 14 },
