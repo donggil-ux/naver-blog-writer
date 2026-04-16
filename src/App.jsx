@@ -560,7 +560,7 @@ export default function NaverBlogApp() {
                 color: searching || !name.trim() ? COLORS.muted : COLORS.bg,
                 fontSize: 13, fontWeight: 480, cursor: searching || !name.trim() ? "not-allowed" : "pointer",
                 whiteSpace: "nowrap", minWidth: 80, fontFamily: FF_SANS, letterSpacing: "-0.14px",
-              }}>{searching ? "SEARCHING" : "SEARCH →"}</button>
+              }}>{searching ? "검색중" : "검색"}</button>
             </div>
           </div>
 
@@ -693,7 +693,7 @@ export default function NaverBlogApp() {
 
         {/* 생성 버튼 — CTA 초록색 (gradient 팔레트의 electric green) */}
         <button className="nb-gen" style={{ ...s.genBtn, background: "#00e599", color: "#000000", opacity: loading ? 0.6 : 1 }} onClick={handleGenerate} disabled={loading}>
-          {loading ? "WRITING..." : `${cat.label} 포스팅 생성하기 →`}
+          {loading ? "작성 중..." : `${cat.label} 포스팅 생성하기`}
         </button>
 
         {loading && <Spinner step={loadingStep} theme={t} />}
