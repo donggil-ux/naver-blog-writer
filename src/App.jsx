@@ -407,19 +407,41 @@ export default function NaverBlogApp() {
         return;
       }
       const top = items[0];
-      const cleanTitle = top.title.replace(/<[^>]*>/g, ""); // HTML 태그 제거
+      const cleanTitle = top.title.replace(/<[^>]*>/g, "");
+
+      // 네이버 블로그에서 메뉴/가격 패턴 추출
+      let blogMenus = [];
+      try {
+        const blogRes = await fetch(`/api/naver-blog?query=${encodeURIComponent(`${cleanTitle} 메뉴 가격`)}`);
+        const blogData = await blogRes.json();
+        const blogText = (blogData.items || []).map(b => `${b.title} ${b.description}`.replace(/<[^>]*>/g, "")).join(" ");
+        // "메뉴명 N,NNN원" 또는 "메뉴명 N원" 패턴 추출
+        const priceMatches = blogText.match(/[가-힣a-zA-Z\s]{2,15}\s?\d{1,3}[,.]?\d{3}원/g) || [];
+        const seen = new Set();
+        blogMenus = priceMatches
+          .map(m => m.trim())
+          .filter(m => {
+            const key = m.replace(/\s/g, "").toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, 8);
+      } catch { /* 블로그 검색 실패해도 가게 정보는 보여줌 */ }
+
       const info = {
         name: cleanTitle,
         location: top.roadAddress || top.address || "",
         hours: "",
         closed: "",
-        menus: [],
+        menus: blogMenus,
         parking: "",
         phone: top.telephone || "",
         summary: top.category || "",
       };
       setStoreInfo(info);
       if (info.location) setLocation(info.location);
+      if (blogMenus.length > 0) setMenus(blogMenus.join(", "));
     } catch (e) {
       setSearchError(`검색 오류: ${e.message}`);
     } finally { setSearching(false); }
@@ -602,14 +624,25 @@ export default function NaverBlogApp() {
           )}
           {storeInfo && !searching && (
             <div style={{ padding: "16px 18px", background: COLORS.accentLight, borderRadius: 8, marginBottom: 14, fontSize: 13, lineHeight: 1.75, color: COLORS.text, fontWeight: 340, letterSpacing: "-0.14px" }}>
-              <div style={{ ...s.monoLabel, fontSize: 10, marginBottom: 8 }}>✓ AUTO-FILLED FROM SEARCH</div>
-              {storeInfo.location && <div>· {storeInfo.location}</div>}
-              {storeInfo.hours && <div>· {storeInfo.hours}</div>}
-              {storeInfo.closed && <div>· 휴무 {storeInfo.closed}</div>}
-              {storeInfo.phone && <div>· {storeInfo.phone}</div>}
-              {storeInfo.parking && <div>· {storeInfo.parking}</div>}
-              {storeInfo.menus?.length > 0 && <div>· {storeInfo.menus.join(", ")}</div>}
-              {storeInfo.summary && <div style={{ color: COLORS.muted, marginTop: 6 }}>{storeInfo.summary}</div>}
+              <div style={{ ...s.monoLabel, fontSize: 10, marginBottom: 8 }}>✓ 검색 결과 (자동 입력됨)</div>
+              {storeInfo.location && <div>📍 {storeInfo.location}</div>}
+              {storeInfo.phone && <div>📞 {storeInfo.phone}</div>}
+              {storeInfo.summary && <div style={{ color: COLORS.muted }}>📂 {storeInfo.summary}</div>}
+              {storeInfo.menus?.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ ...s.monoLabel, fontSize: 10, marginBottom: 8 }}>💡 블로그 추천 메뉴 (클릭 시 자동 입력)</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {storeInfo.menus.map((m, i) => (
+                      <button key={i} onClick={() => setMenus(m)} style={{
+                        padding: "6px 14px 8px", borderRadius: 50,
+                        background: COLORS.bg, border: `1px solid ${COLORS.border}`,
+                        color: COLORS.text, fontSize: 12, fontWeight: 480,
+                        cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.1px",
+                      }}>{m}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
