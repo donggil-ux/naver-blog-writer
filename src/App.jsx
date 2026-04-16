@@ -704,16 +704,14 @@ export default function NaverBlogApp() {
 
           <div style={{ marginBottom: fc.showTarget ? 12 : 0 }}>
             <label style={s.label}>{fc.menusLabel}</label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input style={{ ...s.input, flex: 1 }} placeholder={fc.menusPH} value={menus} onChange={e => setMenus(e.target.value)} />
-              <button onClick={() => receiptRef.current?.click()} disabled={scanning} style={{
-                padding: "0 16px", borderRadius: 50, border: "none",
-                background: scanning ? COLORS.accentLight : COLORS.text,
-                color: scanning ? COLORS.muted : COLORS.bg,
-                fontSize: 12, fontWeight: 480, cursor: scanning ? "not-allowed" : "pointer",
-                whiteSpace: "nowrap", minWidth: 90, fontFamily: FF_SANS,
-              }}>{scanning ? "스캔중..." : "📷 영수증"}</button>
-            </div>
+            <input style={s.input} placeholder={fc.menusPH} value={menus} onChange={e => setMenus(e.target.value)} />
+            <button onClick={() => receiptRef.current?.click()} disabled={scanning} style={{
+              marginTop: 16, padding: "12px 24px 14px", borderRadius: 50, border: `1px solid ${COLORS.border}`,
+              background: COLORS.bg, color: COLORS.text, width: "100%",
+              fontSize: 14, fontWeight: 480, cursor: scanning ? "not-allowed" : "pointer",
+              fontFamily: FF_SANS, letterSpacing: "-0.14px",
+              opacity: scanning ? 0.6 : 1,
+            }}>{scanning ? "📷 영수증 스캔중..." : "📷 영수증 촬영으로 메뉴 자동 입력"}</button>
             <input ref={receiptRef} type="file" accept="image/*" capture="environment" style={{ display: "none" }}
               onChange={e => { if (e.target.files?.[0]) scanReceipt(e.target.files[0]); }} />
           </div>
