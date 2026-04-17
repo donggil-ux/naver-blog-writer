@@ -263,7 +263,7 @@ const s = {
   textarea: { width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${COLORS.border}`, fontSize: 16, color: COLORS.text, background: COLORS.surfaceLight, outline: "none", resize: "vertical", minHeight: 100, boxSizing: "border-box", lineHeight: 1.55, fontFamily: FF_SANS, fontWeight: 400, letterSpacing: "-0.01em", transition: "border-color 0.2s, box-shadow 0.2s" },
   row: { display: "flex", gap: 12, marginBottom: 14 },
   col: { flex: 1 },
-  genBtn: { width: "100%", padding: "16px 28px", borderRadius: 14, background: "#00e599", color: "#000000", fontSize: 17, fontWeight: 600, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.02em", boxShadow: "0 2px 8px rgba(0,229,153,0.25)", transition: "transform 0.15s, box-shadow 0.15s" },
+  genBtn: { width: "100%", padding: "16px 28px", borderRadius: 9999, background: "#00e599", color: "#000000", fontSize: 17, fontWeight: 600, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.02em", boxShadow: "0 2px 8px rgba(0,229,153,0.25)", transition: "transform 0.15s, box-shadow 0.15s" },
   copyBtn: { padding: "8px 16px", borderRadius: 20, background: COLORS.surfaceLight, color: COLORS.text, fontSize: 13, fontWeight: 500, border: `1px solid ${COLORS.border}`, cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em", transition: "background 0.15s" },
   copyBtnDark: { padding: "8px 16px", borderRadius: 20, background: COLORS.accent, color: "#ffffff", fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em" },
   kwTag: { padding: "6px 14px", borderRadius: 20, background: COLORS.accentLight, color: COLORS.accent, fontSize: 13, fontWeight: 500, fontFamily: FF_SANS, letterSpacing: "-0.01em" },
@@ -810,8 +810,13 @@ export default function NaverBlogApp() {
         <div style={s.card} className="nb-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showStyle ? 18 : 0 }}>
             <div className="nb-sec-title" style={{ ...s.secTitle, marginBottom: 0 }}>✨ 내 글 스타일 <span style={{ opacity: 0.45, marginLeft: 4, fontSize: 14, fontWeight: 400 }}>(선택)</span></div>
-            <button onClick={() => setShowStyle(!showStyle)} style={{ ...s.monoLabelMuted, fontSize: 10, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
-              {showStyle ? "CLOSE" : "EXPAND"}
+            <button onClick={() => setShowStyle(!showStyle)} style={{
+              padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 500,
+              background: t.toggleBg, color: t.pageText,
+              border: `1px solid ${t.pageBorder}`, cursor: "pointer",
+              fontFamily: FF_SANS, letterSpacing: "-0.01em",
+            }}>
+              {showStyle ? "접기" : "펼치기"}
             </button>
           </div>
           {showStyle && (
@@ -819,7 +824,12 @@ export default function NaverBlogApp() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 12 }}>
                 <div style={{ fontSize: 13, color: COLORS.muted, fontWeight: 340, letterSpacing: "-0.14px" }}>포스팅 작성 시 이 스타일을 자동 반영해요 · 자유롭게 수정 가능</div>
                 {myStyle !== DEFAULT_MY_STYLE && (
-                  <button onClick={() => setMyStyle(DEFAULT_MY_STYLE)} style={{ ...s.monoLabelMuted, fontSize: 10, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3, whiteSpace: "nowrap" }}>RESET</button>
+                  <button onClick={() => setMyStyle(DEFAULT_MY_STYLE)} style={{
+                    padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 500,
+                    background: t.toggleBg, color: t.pageText,
+                    border: `1px solid ${t.pageBorder}`, cursor: "pointer",
+                    fontFamily: FF_SANS, whiteSpace: "nowrap",
+                  }}>초기화</button>
                 )}
               </div>
               <textarea style={{ ...s.textarea, minHeight: 260 }} placeholder="기존 블로그 글 붙여넣기..." value={myStyle} onChange={e => setMyStyle(e.target.value)} />
