@@ -702,11 +702,8 @@ export default function NaverBlogApp() {
           .nb-body{max-width:720px!important;padding:48px 28px 140px!important}
           .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
         }
-        /* FAB: 모바일/태블릿 표시, 데스크톱만 숨김 */
+        /* FAB: 모든 화면에서 표시 */
         .nb-fab{display:flex!important;align-items:center;justify-content:center}
-        @media (min-width:901px){
-          .nb-fab{display:none!important}
-        }
         @media (max-width:900px){
           .nb-history-btn{display:none!important}
           /* 사이드 패널 → bottom sheet */
