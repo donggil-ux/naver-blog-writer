@@ -702,10 +702,12 @@ export default function NaverBlogApp() {
           .nb-body{max-width:720px!important;padding:48px 28px 140px!important}
           .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
         }
-        /* FAB: 모바일만 표시, 데스크톱 숨김 */
-        .nb-fab{display:none}
-        @media (max-width:768px){
-          .nb-fab{display:flex!important}
+        /* FAB: 모바일/태블릿 표시, 데스크톱만 숨김 */
+        .nb-fab{display:flex!important;align-items:center;justify-content:center}
+        @media (min-width:901px){
+          .nb-fab{display:none!important}
+        }
+        @media (max-width:900px){
           .nb-history-btn{display:none!important}
           /* 사이드 패널 → bottom sheet */
           .nb-history-panel{top:auto!important;right:0!important;left:0!important;bottom:0!important;width:100%!important;height:min(70vh,calc(100vh - 60px))!important;border-radius:20px 20px 0 0!important}
@@ -1109,7 +1111,7 @@ export default function NaverBlogApp() {
       <button className="nb-fab" onClick={() => setShowHistory(true)} aria-label="생성 내역" style={{
         position: "fixed", bottom: 24, right: 20, width: 52, height: 52, borderRadius: 16,
         background: COLORS.accent, color: "#fff", border: "none", cursor: "pointer",
-        fontSize: 20, zIndex: 90, alignItems: "center", justifyContent: "center",
+        fontSize: 20, zIndex: 90,
         boxShadow: "0 4px 16px rgba(0,122,255,0.35)",
       }}>
         📋
