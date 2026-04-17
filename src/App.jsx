@@ -25,37 +25,43 @@ const DEFAULT_MY_STYLE = `앞으로 내 블로그 포스팅 초안을 작성하�
 - 직접 겪어본 사람만 알 수 있는 꿀팁(예: "주차는 공영주차장에", "본점 옆에 1, 2호점이 붙어있으니 헷갈리지 마세요")이나 추천 대상(데이트 장소 추천, 아이랑 가기 좋은 곳 등)을 꼭 포함할 것.
 - "내돈내산이며 제 개인적인 입맛에 맞춰 리뷰합니다"와 같은 솔직하고 진정성 있는 멘트를 곁들일 것.`;
 
-// 다크/라이트 테마 — 카드는 양쪽 모두 흰색 유지, 페이지 chrome만 반전
+// Apple 라이트/다크 테마
 const THEMES = {
+  light: {
+    pageBg: COLORS.surfaceLight,
+    pageText: COLORS.text,
+    pageMuted: COLORS.muted,
+    pageBorder: COLORS.border,
+    headerBg: "rgba(255,255,255,0.72)",
+    headerBlur: "saturate(180%) blur(20px)",
+    tabActiveBg: COLORS.text,
+    tabActiveText: "#ffffff",
+    tabBorder: COLORS.border,
+    tabInactiveText: COLORS.text,
+    cardBg: "#ffffff",
+    cardShadow: SHADOW_SM,
+    inputBg: COLORS.surfaceLight,
+    logoBg: COLORS.accent,
+    logoText: "#ffffff",
+    focusOutline: COLORS.accent,
+  },
   dark: {
     pageBg: "#000000",
-    pageText: "#ffffff",
-    pageMuted: "rgba(255,255,255,0.55)",
-    pageBorder: "rgba(255,255,255,0.12)",
-    tabBorder: "rgba(255,255,255,0.25)",
+    pageText: "#f5f5f7",
+    pageMuted: "#86868b",
+    pageBorder: "rgba(255,255,255,0.15)",
+    headerBg: "rgba(28,28,30,0.80)",
+    headerBlur: "saturate(180%) blur(20px)",
     tabActiveBg: "#ffffff",
-    tabActiveText: "#000000",
-    tabInactiveText: "#ffffff",
-    genBtnBg: "#ffffff",
-    genBtnText: "#000000",
-    logoBg: "#ffffff",
-    logoText: "#000000",
-    focusOutline: "#ffffff",
-  },
-  light: {
-    pageBg: "#ffffff",
-    pageText: "#000000",
-    pageMuted: "rgba(0,0,0,0.55)",
-    pageBorder: "rgba(0,0,0,0.12)",
-    tabBorder: "rgba(0,0,0,0.2)",
-    tabActiveBg: "#000000",
-    tabActiveText: "#ffffff",
-    tabInactiveText: "#000000",
-    genBtnBg: "#000000",
-    genBtnText: "#ffffff",
-    logoBg: "#000000",
+    tabActiveText: "#1d1d1f",
+    tabBorder: "rgba(255,255,255,0.2)",
+    tabInactiveText: "#f5f5f7",
+    cardBg: COLORS.cardDark,
+    cardShadow: "0 2px 10px rgba(0,0,0,0.3)",
+    inputBg: "rgba(255,255,255,0.08)",
+    logoBg: COLORS.accent,
     logoText: "#ffffff",
-    focusOutline: "#000000",
+    focusOutline: COLORS.accent,
   },
 };
 
@@ -120,19 +126,22 @@ const toNaverHTML = (text) => {
   return `<div style="font-family:'Pretendard','Apple SD Gothic Neo',sans-serif;color:#1a1a1a;max-width:720px;">${out.join("\n")}</div>`;
 };
 
-// Figma 디자인 시스템 — 흑백 only (컬러는 결과물 섹션 gradient로만)
+// Apple-inspired 디자인 시스템
 const COLORS = {
   bg: "#ffffff",
   card: "#ffffff",
-  accent: "#000000",
-  accentLight: "rgba(0,0,0,0.05)",
-  accentMid: "rgba(0,0,0,0.40)",
-  text: "#000000",
-  muted: "rgba(0,0,0,0.55)",
-  border: "rgba(0,0,0,0.12)",
+  accent: "#007AFF",
+  accentLight: "rgba(0,122,255,0.08)",
+  accentMid: "rgba(0,122,255,0.40)",
+  text: "#1d1d1f",
+  muted: "#86868b",
+  border: "#d2d2d7",
+  surfaceLight: "#f5f5f7",
+  surfaceDark: "#1c1c1e",
+  cardDark: "#2c2c2e",
 };
-const GRADIENT = "linear-gradient(135deg,#00e599 0%,#ffeb3b 30%,#ab47bc 65%,#ec407a 100%)";
-const FF_SANS = "'Pretendard Variable','Pretendard','SF Pro Display',system-ui,helvetica,sans-serif";
+const GRADIENT = "linear-gradient(135deg,#00e599 0%,#34d399 50%,#10b981 100%)";
+const FF_SANS = "-apple-system,BlinkMacSystemFont,'SF Pro Display','Pretendard Variable','Pretendard',system-ui,sans-serif";
 const FF_MONO = "'SF Mono','Menlo','Consolas',monospace";
 
 const CATEGORIES = [
@@ -219,41 +228,40 @@ const SYSTEM_PROMPT = {
 #태그 (7~10개)`,
 };
 
+const SHADOW_SM = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
+const SHADOW_MD = "0 4px 14px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)";
+const SHADOW_LG = "0 8px 30px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.04)";
+
 const s = {
-  app: { minHeight: "100vh", background: "#000000", fontFamily: FF_SANS, color: "#ffffff", fontFeatureSettings: '"kern"', WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale", letterSpacing: "-0.14px" },
-  header: { background: "#000000", borderBottom: "1px solid rgba(255,255,255,0.12)", padding: "22px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10 },
-  headerLeft: { display: "flex", alignItems: "center", gap: 14 },
-  logo: { width: 36, height: 36, background: "#ffffff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#000000", fontSize: 15, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: FF_SANS },
-  monoLabel: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: COLORS.text },
-  monoLabelMuted: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: COLORS.muted },
-  monoLabelLight: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: "#ffffff" },
-  monoLabelLightMuted: { fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: "rgba(255,255,255,0.55)" },
-  body: { maxWidth: 780, margin: "0 auto", padding: "48px 24px 120px" },
-  card: { background: COLORS.bg, borderRadius: 8, padding: 32, marginBottom: 14, border: `1px solid ${COLORS.border}` },
-  secTitle: { fontFamily: FF_SANS, fontSize: 24, fontWeight: 700, color: COLORS.text, marginBottom: 22, display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.26px", lineHeight: 1.35 },
-  label: { fontFamily: FF_SANS, fontSize: 14, color: COLORS.muted, marginBottom: 4, display: "block", letterSpacing: "-0.14px", fontWeight: 600 },
-  input: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", boxSizing: "border-box", fontFamily: FF_SANS, fontWeight: 400, letterSpacing: "-0.14px" },
-  textarea: { width: "100%", padding: "14px 16px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 15, color: COLORS.text, background: COLORS.bg, outline: "none", resize: "vertical", minHeight: 100, boxSizing: "border-box", lineHeight: 1.55, fontFamily: FF_SANS, fontWeight: 340, letterSpacing: "-0.14px" },
+  app: { minHeight: "100vh", background: COLORS.surfaceLight, fontFamily: FF_SANS, color: COLORS.text, WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale", letterSpacing: "-0.01em" },
+  header: { background: "rgba(255,255,255,0.72)", backdropFilter: "saturate(180%) blur(20px)", WebkitBackdropFilter: "saturate(180%) blur(20px)", borderBottom: `0.5px solid ${COLORS.border}`, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10 },
+  headerLeft: { display: "flex", alignItems: "center", gap: 12 },
+  logo: { width: 34, height: 34, background: COLORS.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#ffffff", fontSize: 15, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: FF_SANS },
+  body: { maxWidth: 680, margin: "0 auto", padding: "36px 20px 120px" },
+  card: { background: COLORS.bg, borderRadius: 16, padding: 24, marginBottom: 12, border: "none", boxShadow: SHADOW_SM },
+  secTitle: { fontFamily: FF_SANS, fontSize: 20, fontWeight: 700, color: COLORS.text, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.02em", lineHeight: 1.3 },
+  label: { fontFamily: FF_SANS, fontSize: 13, color: COLORS.muted, marginBottom: 6, display: "block", letterSpacing: "-0.01em", fontWeight: 500 },
+  input: { width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${COLORS.border}`, fontSize: 16, color: COLORS.text, background: COLORS.surfaceLight, outline: "none", boxSizing: "border-box", fontFamily: FF_SANS, fontWeight: 400, letterSpacing: "-0.01em", transition: "border-color 0.2s, box-shadow 0.2s" },
+  textarea: { width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${COLORS.border}`, fontSize: 16, color: COLORS.text, background: COLORS.surfaceLight, outline: "none", resize: "vertical", minHeight: 100, boxSizing: "border-box", lineHeight: 1.55, fontFamily: FF_SANS, fontWeight: 400, letterSpacing: "-0.01em", transition: "border-color 0.2s, box-shadow 0.2s" },
   row: { display: "flex", gap: 12, marginBottom: 14 },
   col: { flex: 1 },
-  genBtn: { width: "100%", padding: "18px 32px 20px", borderRadius: 50, background: "#ffffff", color: "#000000", fontSize: 16, fontWeight: 480, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.14px" },
-  copyBtn: { padding: "8px 18px 10px", borderRadius: 50, background: COLORS.bg, color: COLORS.text, fontSize: 13, fontWeight: 480, border: `1px solid ${COLORS.border}`, cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.14px" },
-  copyBtnDark: { padding: "8px 18px 10px", borderRadius: 50, background: COLORS.text, color: COLORS.bg, fontSize: 13, fontWeight: 480, border: "none", cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.14px" },
-  kwTag: { padding: "6px 14px 8px", borderRadius: 50, background: COLORS.accentLight, color: COLORS.text, fontSize: 12, fontWeight: 400, fontFamily: FF_SANS, letterSpacing: "-0.1px" },
-  photoThumb: { width: 88, height: 88, borderRadius: 8, objectFit: "cover", border: `1px solid ${COLORS.border}` },
-  addPhoto: { width: 88, height: 88, borderRadius: 8, border: `1px dashed ${COLORS.muted}`, background: COLORS.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.muted, fontSize: 10, gap: 3, fontFamily: FF_MONO, letterSpacing: "0.5px", textTransform: "uppercase" },
+  genBtn: { width: "100%", padding: "16px 28px", borderRadius: 14, background: "#00e599", color: "#000000", fontSize: 17, fontWeight: 600, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.02em", boxShadow: "0 2px 8px rgba(0,229,153,0.25)", transition: "transform 0.15s, box-shadow 0.15s" },
+  copyBtn: { padding: "8px 16px", borderRadius: 20, background: COLORS.surfaceLight, color: COLORS.text, fontSize: 13, fontWeight: 500, border: `1px solid ${COLORS.border}`, cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em", transition: "background 0.15s" },
+  copyBtnDark: { padding: "8px 16px", borderRadius: 20, background: COLORS.accent, color: "#ffffff", fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em" },
+  kwTag: { padding: "6px 14px", borderRadius: 20, background: COLORS.accentLight, color: COLORS.accent, fontSize: 13, fontWeight: 500, fontFamily: FF_SANS, letterSpacing: "-0.01em" },
+  photoThumb: { width: 80, height: 80, borderRadius: 12, objectFit: "cover", border: "none", boxShadow: SHADOW_SM },
+  addPhoto: { width: 80, height: 80, borderRadius: 12, border: `1.5px dashed ${COLORS.border}`, background: COLORS.surfaceLight, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.muted, fontSize: 11, gap: 3, fontFamily: FF_SANS, fontWeight: 500, transition: "background 0.15s" },
 };
 
 function Spinner({ step, theme }) {
-  const pt = theme?.pageText || "#ffffff";
-  const pm = theme?.pageMuted || "rgba(255,255,255,0.55)";
-  const pb = theme?.pageBorder || "rgba(255,255,255,0.2)";
+  const pt = theme?.pageText || "#f5f5f7";
+  const pm = theme?.pageMuted || "#86868b";
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", gap: 16, color: pm, fontSize: 13, fontFamily: FF_SANS }}>
-      <div style={{ width: 34, height: 34, border: `2px solid ${pb}`, borderTop: `2px solid ${pt}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", gap: 14, color: pm, fontSize: 14, fontFamily: FF_SANS }}>
+      <div style={{ width: 28, height: 28, border: `3px solid rgba(0,122,255,0.2)`, borderTop: `3px solid #007AFF`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: pt, marginBottom: 6 }}>{step}</div>
-        <div style={{ fontWeight: 340, letterSpacing: "-0.14px" }}>잠시만 기다려주세요...</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: pt, marginBottom: 4, letterSpacing: "-0.01em" }}>{step}</div>
+        <div style={{ fontWeight: 400 }}>잠시만 기다려주세요</div>
       </div>
     </div>
   );
@@ -529,100 +537,99 @@ export default function NaverBlogApp() {
   const cat = CATEGORIES.find(c => c.id === category);
 
   return (
-    <div style={{ ...s.app, background: t.pageBg, color: t.pageText }} className={`nb-root theme-${theme}`}>
+    <div style={{ ...s.app, background: t.pageBg, color: t.pageText }} className={`nb-root theme-${theme}`} data-theme={theme}>
       <style>{`
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css');
-        *{box-sizing:border-box;font-feature-settings:"kern"}
+        *{box-sizing:border-box;margin:0;padding:0}
         html,body{margin:0;padding:0}
-        input,textarea,button,select{font-family:inherit;font-feature-settings:"kern"}
-        button{-webkit-tap-highlight-color:transparent;cursor:pointer}
-        button:active{transform:scale(0.98)}
-        /* Figma 디자인 시스템: dashed 2px focus — 에디터 셀렉션 핸들 호응 */
-        /* 카드(흰 배경)는 항상 검정 dashed, 페이지 버튼은 테마에 따라 흰/검정 */
-        input:focus,textarea:focus{outline:2px dashed #000;outline-offset:3px;border-color:#000!important}
-        .theme-dark button:focus-visible{outline:2px dashed #ffffff;outline-offset:3px}
-        .theme-light button:focus-visible{outline:2px dashed #000;outline-offset:3px}
-        .nb-card button:focus-visible{outline-color:#000!important}
-        input[type="date"]{min-height:48px;appearance:none;-webkit-appearance:none}
-        input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.6;padding:0}
+        input,textarea,button,select{font-family:inherit}
+        button{-webkit-tap-highlight-color:transparent;cursor:pointer;transition:transform 0.12s,opacity 0.12s}
+        button:active{transform:scale(0.97)}
+        /* Apple-style focus ring */
+        input:focus,textarea:focus{outline:none;border-color:#007AFF!important;box-shadow:0 0 0 3px rgba(0,122,255,0.25)!important}
+        button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(0,122,255,0.35)}
+        input[type="date"]{min-height:46px;appearance:none;-webkit-appearance:none}
+        input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.5;padding:0}
         input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
         input[type="date"]::-webkit-date-and-time-value{text-align:left}
         input[type="date"]::-webkit-datetime-edit{padding:0}
-        input,textarea{font-size:16px}  /* iOS 줌 방지 */
+        input,textarea{font-size:16px;transition:border-color 0.2s,box-shadow 0.2s}
         @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes gshift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 
         /* 모바일 (≤480px) */
         @media (max-width:480px){
-          .nb-header{padding:16px 18px!important}
+          .nb-header{padding:12px 16px!important}
           .nb-header-sub{display:none!important}
-          .nb-body{padding:32px 18px 90px!important}
-          .nb-card{padding:22px!important}
-          .nb-tab{padding:11px 18px 13px!important;font-size:13px!important}
-          .nb-gen{padding:16px 24px 18px!important;font-size:15px!important}
-          .nb-photo,.nb-addphoto{width:76px!important;height:76px!important}
-          .nb-hero-label{font-size:10px!important}
-          .nb-hero-title{font-size:32px!important;letter-spacing:-0.96px!important}
-          .nb-result-head{flex-wrap:wrap!important;gap:10px!important}
-          .nb-sec-title{font-size:20px!important}
+          .nb-body{padding:24px 16px 90px!important}
+          .nb-card{padding:18px!important;border-radius:14px!important}
+          .nb-tab{padding:9px 16px!important;font-size:14px!important}
+          .nb-gen{padding:15px 20px!important;font-size:16px!important;border-radius:12px!important}
+          .nb-photo,.nb-addphoto{width:72px!important;height:72px!important}
+          .nb-hero-title{font-size:28px!important}
+          .nb-result-head{flex-wrap:wrap!important;gap:8px!important}
+          .nb-sec-title{font-size:18px!important}
         }
         /* 태블릿 / 아이패드 (481~900px) */
         @media (min-width:481px) and (max-width:900px){
-          .nb-body{max-width:720px!important;padding:44px 28px 120px!important}
-          .nb-card{padding:30px!important}
-          .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
+          .nb-body{max-width:640px!important;padding:40px 24px 120px!important}
+          .nb-card{padding:28px!important}
+          .nb-photo,.nb-addphoto{width:88px!important;height:88px!important}
         }
         /* 데스크톱 (≥901px) */
         @media (min-width:901px){
-          .nb-body{max-width:800px!important;padding:56px 32px 140px!important}
-          .nb-photo,.nb-addphoto{width:100px!important;height:100px!important}
+          .nb-body{max-width:720px!important;padding:48px 28px 140px!important}
+          .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
         }
+        /* Apple 다크 모드 — 카드/인풋 오버라이드 */
+        .theme-dark .nb-card{background:#2c2c2e!important;box-shadow:0 2px 10px rgba(0,0,0,0.3)!important;border:none!important}
+        .theme-dark input,.theme-dark textarea{background:rgba(255,255,255,0.08)!important;border-color:rgba(255,255,255,0.15)!important;color:#f5f5f7!important}
+        .theme-dark input:focus,.theme-dark textarea:focus{border-color:#007AFF!important;box-shadow:0 0 0 3px rgba(0,122,255,0.3)!important}
+        .theme-dark .nb-sec-title{color:#f5f5f7!important}
+        .theme-dark .nb-card-result{background:#2c2c2e!important;border-color:rgba(255,255,255,0.15)!important}
       `}</style>
 
-      <div style={{ ...s.header, background: t.pageBg, borderBottom: `1px solid ${t.pageBorder}` }} className="nb-header">
+      <div style={{ ...s.header, background: t.headerBg, backdropFilter: t.headerBlur, WebkitBackdropFilter: t.headerBlur, borderBottom: `0.5px solid ${t.pageBorder}` }} className="nb-header">
         <div style={s.headerLeft}>
-          <div style={{ ...s.logo, background: t.logoBg, color: t.logoText }}>N</div>
+          <div style={s.logo}>N</div>
           <div>
-            <div style={{ fontSize: 19, fontWeight: 540, letterSpacing: "-0.38px", lineHeight: 1.1, color: t.pageText }}>블로그 AI 작성기</div>
-            <div className="nb-header-sub" style={{ fontFamily: FF_MONO, fontSize: 11, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: t.pageMuted, marginTop: 4 }}>NAVER BLOG POST GENERATOR</div>
+            <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.15, color: t.pageText }}>블로그 AI 작성기</div>
+            <div className="nb-header-sub" style={{ fontSize: 12, color: t.pageMuted, marginTop: 2, fontWeight: 400 }}>네이버 블로그 포스팅 자동 생성</div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div className="nb-header-sub" style={{ fontFamily: FF_MONO, fontSize: 10, fontWeight: 400, letterSpacing: "0.6px", textTransform: "uppercase", color: t.pageMuted }}>V 2.0</div>
-          <button onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} style={{
-            width: 36, height: 36, borderRadius: "50%",
-            background: "transparent", border: `1px solid ${t.pageBorder}`,
-            color: t.pageText, cursor: "pointer",
-            fontSize: 15, lineHeight: 1,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: FF_SANS,
-          }}>{theme === "dark" ? "☀" : "☾"}</button>
-        </div>
+        <button onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? "라이트 모드" : "다크 모드"} style={{
+          width: 34, height: 34, borderRadius: 10,
+          background: theme === "dark" ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.05)",
+          border: "none", color: t.pageText, cursor: "pointer",
+          fontSize: 16, lineHeight: 1,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>{theme === "dark" ? "☀️" : "🌙"}</button>
       </div>
 
       <div style={s.body} className="nb-body">
 
         {/* Hero 타이틀 */}
-        <div style={{ marginBottom: 36 }}>
-          <div className="nb-hero-title" style={{ fontSize: 38, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-1.14px", fontFamily: FF_SANS, color: t.pageText }}>
+        <div style={{ marginBottom: 28 }}>
+          <div className="nb-hero-title" style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, letterSpacing: "-0.03em", fontFamily: FF_SANS, color: t.pageText }}>
             어떤 글을 작성할까요?
           </div>
         </div>
 
-        {/* 카테고리 탭 — Pill 50px 라디우스 */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 40, flexWrap: "wrap" }}>
+        {/* 카테고리 탭 — Apple Segmented Control 스타일 */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 28, background: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)", borderRadius: 12, padding: 3 }}>
           {CATEGORIES.map(c => {
             const active = category === c.id;
             return (
               <button key={c.id} onClick={() => resetForm(c.id)} className="nb-tab" style={{
-                padding: "12px 22px 14px", borderRadius: 50,
-                border: active ? `1px solid ${t.tabActiveBg}` : `1px solid ${t.tabBorder}`,
-                background: active ? t.tabActiveBg : "transparent",
-                color: active ? t.tabActiveText : t.tabInactiveText,
-                fontWeight: 480, fontSize: 14, fontFamily: FF_SANS, letterSpacing: "-0.14px",
-                display: "flex", alignItems: "center", gap: 8, transition: "all 0.15s",
+                flex: 1, padding: "10px 8px", borderRadius: 10,
+                border: "none",
+                background: active ? t.cardBg : "transparent",
+                color: active ? (theme === "dark" ? "#1d1d1f" : COLORS.text) : t.pageMuted,
+                boxShadow: active ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
+                fontWeight: active ? 600 : 400, fontSize: 14, fontFamily: FF_SANS, letterSpacing: "-0.01em",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                transition: "all 0.2s ease",
               }}>
-                <span style={{ fontSize: 15 }}>{c.emoji}</span>
+                <span style={{ fontSize: 14 }}>{c.emoji}</span>
                 <span>{c.label}</span>
               </button>
             );
@@ -812,10 +819,9 @@ export default function NaverBlogApp() {
         )}
 
         {result && !loading && (
-          <div style={{ background: COLORS.bg, borderRadius: 8, border: `1px solid ${COLORS.text}`, marginTop: 20, overflow: "hidden" }} className="nb-card-result">
-            {/* Figma 디자인 시스템의 vibrant gradient — 유일한 컬러 요소 */}
-            <div style={{ height: 8, background: GRADIENT }} />
-            <div style={{ padding: 32 }}>
+          <div style={{ background: COLORS.bg, borderRadius: 16, border: "none", marginTop: 20, overflow: "hidden", boxShadow: SHADOW_LG }} className="nb-card nb-card-result">
+            <div style={{ height: 4, background: GRADIENT }} />
+            <div style={{ padding: 24 }}>
               <div className="nb-result-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
                 <div style={{ fontFamily: FF_SANS, fontSize: 24, fontWeight: 700, letterSpacing: "-0.26px", lineHeight: 1.35, color: COLORS.text }}>✅ 완성된 포스팅</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
