@@ -702,6 +702,15 @@ export default function NaverBlogApp() {
           .nb-body{max-width:720px!important;padding:48px 28px 140px!important}
           .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
         }
+        /* FAB: 모바일만 표시, 데스크톱 숨김 */
+        .nb-fab{display:none}
+        @media (max-width:768px){
+          .nb-fab{display:flex!important}
+          .nb-history-btn{display:none!important}
+          /* 사이드 패널 → bottom sheet */
+          .nb-history-panel{top:auto!important;right:0!important;left:0!important;bottom:0!important;width:100%!important;height:min(70vh,calc(100vh - 60px))!important;border-radius:20px 20px 0 0!important}
+          .nb-toast{bottom:100px!important}
+        }
         /* 라이트 모드 — 카드/인풋 */
         .theme-light .nb-card{background:#FFFFFF!important;border:1px solid #E5E7EB!important}
         .theme-light ::placeholder{color:#9CA3AF!important}
@@ -727,7 +736,7 @@ export default function NaverBlogApp() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {draftStatus && <span className="nb-header-sub" style={{ fontSize: 11, color: t.pageMuted, fontWeight: 400 }}>{draftStatus}</span>}
-          <button onClick={() => setShowHistory(true)} aria-label="내역" title="생성 내역" style={{
+          <button className="nb-history-btn" onClick={() => setShowHistory(true)} aria-label="내역" title="생성 내역" style={{
             width: 34, height: 34, borderRadius: 10,
             background: t.toggleBg, border: "none", color: t.pageText, cursor: "pointer",
             fontSize: 15, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
@@ -1007,7 +1016,7 @@ export default function NaverBlogApp() {
       {showHistory && (
         <>
           <div onClick={() => { setShowHistory(false); setHistoryDetail(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 100, transition: "opacity 0.2s" }} />
-          <div style={{
+          <div className="nb-history-panel" style={{
             position: "fixed", top: 0, right: 0, bottom: 0, width: "min(360px, 85vw)",
             background: t.cardBg, zIndex: 101, overflowY: "auto",
             boxShadow: "-8px 0 30px rgba(0,0,0,0.15)", padding: "20px 16px",
@@ -1096,9 +1105,20 @@ export default function NaverBlogApp() {
         </>
       )}
 
+      {/* ── FAB (모바일 전용) ── */}
+      <button className="nb-fab" onClick={() => setShowHistory(true)} aria-label="생성 내역" style={{
+        position: "fixed", bottom: 24, right: 20, width: 52, height: 52, borderRadius: 16,
+        background: COLORS.accent, color: "#fff", border: "none", cursor: "pointer",
+        fontSize: 20, zIndex: 90, alignItems: "center", justifyContent: "center",
+        boxShadow: "0 4px 16px rgba(0,122,255,0.35)",
+      }}>
+        📋
+        {history.length > 0 && <span style={{ position: "absolute", top: -4, right: -4, width: 20, height: 20, borderRadius: "50%", background: "#EF4444", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{history.length}</span>}
+      </button>
+
       {/* ── 토스트 ── */}
       {toast && (
-        <div style={{
+        <div className="nb-toast" style={{
           position: "fixed", bottom: 40, left: "50%", transform: "translateX(-50%)",
           background: t.pageText, color: t.pageBg, padding: "12px 24px", borderRadius: 12,
           fontSize: 14, fontWeight: 600, zIndex: 300, boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
