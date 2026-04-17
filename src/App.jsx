@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 const DEFAULT_MY_STYLE = `앞으로 내 블로그 포스팅 초안을 작성하거나 다듬을 때는 아래의 '새밍이 블로그 글 스타일'을 반드시 지켜서 작성해 줘.
 
@@ -336,6 +336,108 @@ export default function NaverBlogApp() {
   const [scanning, setScanning] = useState(false);
   const [dragOver, setDragOver] = useState(null);
 
+  // ── 임시저장 ──
+  const [draftStatus, setDraftStatus] = useState("");
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const draftTimer = useRef(null);
+  const draftSavedData = useRef(null);
+
+  const saveDraft = useCallback(() => {
+    const draft = { category, name, location, date, menus, target, memo, myStyle, savedAt: new Date().toISOString() };
+    localStorage.setItem("blog_writer_draft", JSON.stringify(draft));
+    const now = new Date();
+    setDraftStatus(`임시저장 완료 · ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`);
+  }, [category, name, location, date, menus, target, memo, myStyle]);
+
+  // 디바운스 자동 저장
+  useEffect(() => {
+    if (!name && !memo && !menus) return; // 빈 폼이면 저장 안 함
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(() => saveDraft(), 1500);
+    return () => { if (draftTimer.current) clearTimeout(draftTimer.current); };
+  }, [category, name, location, date, menus, target, memo, saveDraft]);
+
+  // 페이지 진입 시 저장된 draft 확인
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("blog_writer_draft");
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.name || d.memo || d.menus) {
+          draftSavedData.current = d;
+          setShowDraftBanner(true);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const restoreDraft = () => {
+    const d = draftSavedData.current;
+    if (!d) return;
+    setCategory(d.category || "food");
+    setName(d.name || ""); setLocation(d.location || ""); setDate(d.date || "");
+    setMenus(d.menus || ""); setTarget(d.target || ""); setMemo(d.memo || "");
+    if (d.myStyle !== undefined) setMyStyle(d.myStyle);
+    setShowDraftBanner(false);
+  };
+  const dismissDraft = () => { setShowDraftBanner(false); localStorage.removeItem("blog_writer_draft"); };
+  const clearDraft = () => { localStorage.removeItem("blog_writer_draft"); setDraftStatus(""); };
+
+  // ── 생성 내역 ──
+  const [history, setHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("blog_writer_history") || "[]"); } catch { return []; }
+  });
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyDetail, setHistoryDetail] = useState(null);
+  const [toast, setToast] = useState("");
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2000); };
+
+  const saveHistory = (content) => {
+    const entry = {
+      id: Date.now(),
+      createdAt: new Date().toISOString(),
+      category,
+      title: name,
+      content,
+      formData: { category, name, location, date, menus, target, memo, myStyle },
+    };
+    const updated = [entry, ...history].slice(0, 50);
+    setHistory(updated);
+    localStorage.setItem("blog_writer_history", JSON.stringify(updated));
+  };
+
+  const deleteHistory = (id) => {
+    const updated = history.filter(h => h.id !== id);
+    setHistory(updated);
+    localStorage.setItem("blog_writer_history", JSON.stringify(updated));
+    setHistoryDetail(null);
+    showToast("삭제됨");
+  };
+
+  // ESC 키로 패널/모달 닫기
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        if (historyDetail) setHistoryDetail(null);
+        else if (showHistory) setShowHistory(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showHistory, historyDetail]);
+
+  const restoreFromHistory = (entry) => {
+    const d = entry.formData;
+    setCategory(d.category || "food");
+    setName(d.name || ""); setLocation(d.location || ""); setDate(d.date || "");
+    setMenus(d.menus || ""); setTarget(d.target || ""); setMemo(d.memo || "");
+    if (d.myStyle !== undefined) setMyStyle(d.myStyle);
+    setResult(null); setKeywords([]); setStoreInfo(null);
+    setHistoryDetail(null); setShowHistory(false);
+    showToast("폼 불러오기 완료");
+  };
+
   const reorderPhotos = (from, to) => {
     if (from === to || from == null || to == null) return;
     setPhotos(prev => {
@@ -547,6 +649,8 @@ export default function NaverBlogApp() {
         generationConfig: { maxOutputTokens: 8000, temperature: 0.85 },
       });
       setResult(text);
+      saveHistory(text);
+      clearDraft();
     } catch (e) { console.error(e); alert(`오류: ${e.message}`); }
     finally { setLoading(false); setLoadingStep(""); }
   };
@@ -621,16 +725,37 @@ export default function NaverBlogApp() {
             <div className="nb-header-sub" style={{ fontSize: 12, color: t.pageMuted, marginTop: 2, fontWeight: 400 }}>네이버 블로그 포스팅 자동 생성</div>
           </div>
         </div>
-        <button onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? "라이트 모드" : "다크 모드"} style={{
-          width: 34, height: 34, borderRadius: 10,
-          background: t.toggleBg,
-          border: "none", color: t.pageText, cursor: "pointer",
-          fontSize: 16, lineHeight: 1,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>{theme === "dark" ? "☀️" : "🌙"}</button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {draftStatus && <span className="nb-header-sub" style={{ fontSize: 11, color: t.pageMuted, fontWeight: 400 }}>{draftStatus}</span>}
+          <button onClick={() => setShowHistory(true)} aria-label="내역" title="생성 내역" style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: t.toggleBg, border: "none", color: t.pageText, cursor: "pointer",
+            fontSize: 15, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+            position: "relative",
+          }}>
+            📋
+            {history.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: COLORS.accent, color: "#fff", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{history.length}</span>}
+          </button>
+          <button onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? "라이트 모드" : "다크 모드"} style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: t.toggleBg, border: "none", color: t.pageText, cursor: "pointer",
+            fontSize: 16, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
+          }}>{theme === "dark" ? "☀️" : "🌙"}</button>
+        </div>
       </div>
 
       <div style={s.body} className="nb-body">
+
+        {/* 임시저장 복원 배너 */}
+        {showDraftBanner && (
+          <div style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14, padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, boxShadow: SHADOW_SM }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: t.pageText }}>작성 중이던 내용이 있어요. 이어서 작성할까요?</div>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              <button onClick={restoreDraft} style={{ padding: "8px 16px", borderRadius: 10, background: COLORS.accent, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>불러오기</button>
+              <button onClick={dismissDraft} style={{ padding: "8px 16px", borderRadius: 10, background: t.toggleBg, color: t.pageText, border: `1px solid ${t.pageBorder}`, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>새로 작성</button>
+            </div>
+          </div>
+        )}
 
         {/* Hero 타이틀 */}
         <div style={{ marginBottom: 28 }}>
@@ -877,6 +1002,108 @@ export default function NaverBlogApp() {
         )}
 
       </div>
+
+      {/* ── 생성 내역 사이드 패널 ── */}
+      {showHistory && (
+        <>
+          <div onClick={() => { setShowHistory(false); setHistoryDetail(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 100, transition: "opacity 0.2s" }} />
+          <div style={{
+            position: "fixed", top: 0, right: 0, bottom: 0, width: "min(360px, 85vw)",
+            background: t.cardBg, zIndex: 101, overflowY: "auto",
+            boxShadow: "-8px 0 30px rgba(0,0,0,0.15)", padding: "20px 16px",
+            display: "flex", flexDirection: "column",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: t.pageText }}>생성 내역</div>
+              <button onClick={() => { setShowHistory(false); setHistoryDetail(null); }} style={{
+                width: 32, height: 32, borderRadius: 8, background: t.toggleBg, border: "none",
+                color: t.pageText, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>✕</button>
+            </div>
+            {history.length === 0 ? (
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, color: t.pageMuted }}>
+                <span style={{ fontSize: 40 }}>📝</span>
+                <span style={{ fontSize: 14, fontWeight: 500 }}>아직 생성한 포스팅이 없어요</span>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {history.map(h => {
+                  const catObj = CATEGORIES.find(c => c.id === h.category);
+                  const dt = new Date(h.createdAt);
+                  const dateStr = `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`;
+                  const preview = (h.content || "").replace(/\n/g, " ").slice(0, 80);
+                  return (
+                    <button key={h.id} onClick={() => setHistoryDetail(h)} style={{
+                      background: t.toggleBg, border: `1px solid ${t.pageBorder}`, borderRadius: 12,
+                      padding: "14px 16px", textAlign: "left", cursor: "pointer",
+                      display: "flex", flexDirection: "column", gap: 6, width: "100%",
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, background: COLORS.accent, color: "#fff", padding: "2px 8px", borderRadius: 6 }}>{catObj?.emoji} {catObj?.label || h.category}</span>
+                        <span style={{ fontSize: 11, color: t.pageMuted }}>{dateStr}</span>
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: t.pageText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.title}</div>
+                      <div style={{ fontSize: 12, color: t.pageMuted, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: 1.4 }}>{preview}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── 내역 상세 모달 ── */}
+      {historyDetail && (
+        <>
+          <div onClick={() => setHistoryDetail(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200 }} />
+          <div style={{
+            position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+            width: "min(560px, 90vw)", maxHeight: "85vh", overflowY: "auto",
+            background: t.cardBg, borderRadius: 20, padding: 28, zIndex: 201,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: t.pageText, marginBottom: 4 }}>{historyDetail.title}</div>
+                <div style={{ fontSize: 12, color: t.pageMuted }}>
+                  {(() => { const dt = new Date(historyDetail.createdAt); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`; })()}
+                </div>
+              </div>
+              <button onClick={() => setHistoryDetail(null)} style={{
+                width: 32, height: 32, borderRadius: 8, background: t.toggleBg, border: "none",
+                color: t.pageText, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>✕</button>
+            </div>
+            <div style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word", color: t.pageText, marginBottom: 24, maxHeight: "50vh", overflowY: "auto", padding: 16, background: t.toggleBg, borderRadius: 12 }}>
+              {historyDetail.content}
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={() => { navigator.clipboard.writeText(historyDetail.content); showToast("복사됨!"); }} style={{
+                flex: 1, padding: "12px 16px", borderRadius: 12, background: COLORS.accent, color: "#fff",
+                border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer",
+              }}>복사하기</button>
+              <button onClick={() => restoreFromHistory(historyDetail)} style={{
+                flex: 1, padding: "12px 16px", borderRadius: 12, background: t.toggleBg, color: t.pageText,
+                border: `1px solid ${t.pageBorder}`, fontSize: 14, fontWeight: 600, cursor: "pointer",
+              }}>폼 불러오기</button>
+              <button onClick={() => deleteHistory(historyDetail.id)} style={{
+                padding: "12px 16px", borderRadius: 12, background: "transparent", color: "#EF4444",
+                border: "1px solid #EF4444", fontSize: 14, fontWeight: 600, cursor: "pointer",
+              }}>삭제</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── 토스트 ── */}
+      {toast && (
+        <div style={{
+          position: "fixed", bottom: 40, left: "50%", transform: "translateX(-50%)",
+          background: t.pageText, color: t.pageBg, padding: "12px 24px", borderRadius: 12,
+          fontSize: 14, fontWeight: 600, zIndex: 300, boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+        }}>{toast}</div>
+      )}
     </div>
   );
 }
