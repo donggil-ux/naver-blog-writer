@@ -266,7 +266,7 @@ const s = {
   genBtn: { width: "100%", padding: "16px 28px", borderRadius: 9999, background: "#00e599", color: "#000000", fontSize: 17, fontWeight: 600, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.02em", boxShadow: "0 2px 8px rgba(0,229,153,0.25)", transition: "transform 0.15s, box-shadow 0.15s" },
   copyBtn: { padding: "8px 16px", borderRadius: 20, background: COLORS.surfaceLight, color: COLORS.text, fontSize: 13, fontWeight: 500, border: `1px solid ${COLORS.border}`, cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em", transition: "background 0.15s" },
   copyBtnDark: { padding: "8px 16px", borderRadius: 20, background: COLORS.accent, color: "#ffffff", fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em" },
-  kwTag: { padding: "6px 14px", borderRadius: 20, background: COLORS.accentLight, color: COLORS.accent, fontSize: 13, fontWeight: 500, fontFamily: FF_SANS, letterSpacing: "-0.01em" },
+  kwTag: { padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500, fontFamily: FF_SANS, letterSpacing: "-0.01em" },
   photoThumb: { width: 80, height: 80, borderRadius: 12, objectFit: "cover", border: "none", boxShadow: SHADOW_SM },
   addPhoto: { width: 80, height: 80, borderRadius: 12, border: `1.5px dashed ${COLORS.border}`, background: COLORS.surfaceLight, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.muted, fontSize: 11, gap: 3, fontFamily: FF_SANS, fontWeight: 500, transition: "background 0.15s" },
 };
@@ -692,20 +692,20 @@ export default function NaverBlogApp() {
             </div>
           )}
           {storeInfo && !searching && (
-            <div style={{ padding: "16px 18px", background: COLORS.accentLight, borderRadius: 8, marginBottom: 14, fontSize: 13, lineHeight: 1.75, color: COLORS.text, fontWeight: 340, letterSpacing: "-0.14px" }}>
-              <div style={{ ...s.monoLabel, fontSize: 10, marginBottom: 8 }}>✓ 검색 결과 (자동 입력됨)</div>
+            <div style={{ padding: "16px 18px", background: t.toggleBg, borderRadius: 8, marginBottom: 14, fontSize: 13, lineHeight: 1.75, color: t.pageText, fontWeight: 400, letterSpacing: "-0.01em" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>✓ 검색 결과 (자동 입력됨)</div>
               {storeInfo.location && <div>📍 {storeInfo.location}</div>}
               {storeInfo.phone && <div>📞 {storeInfo.phone}</div>}
-              {storeInfo.summary && <div style={{ color: COLORS.muted }}>📂 {storeInfo.summary}</div>}
+              {storeInfo.summary && <div style={{ color: t.pageMuted }}>📂 {storeInfo.summary}</div>}
               {storeInfo.menus?.length > 0 && (
                 <div style={{ marginTop: 10 }}>
-                  <div style={{ ...s.monoLabel, fontSize: 10, marginBottom: 8 }}>💡 블로그 추천 메뉴 (클릭 시 자동 입력)</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>💡 블로그 추천 메뉴 (클릭 시 자동 입력)</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {storeInfo.menus.map((m, i) => (
                       <button key={i} onClick={() => setMenus(m)} style={{
                         padding: "6px 14px 8px", borderRadius: 50,
-                        background: COLORS.bg, border: `1px solid ${COLORS.border}`,
-                        color: COLORS.text, fontSize: 12, fontWeight: 480,
+                        background: t.cardBg, border: `1px solid ${t.pageBorder}`,
+                        color: t.pageText, fontSize: 12, fontWeight: 480,
                         cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.1px",
                       }}>{m}</button>
                     ))}
@@ -760,7 +760,7 @@ export default function NaverBlogApp() {
         <div style={s.card} className="nb-card">
           <div className="nb-sec-title" style={s.secTitle}>📝 메모</div>
           <textarea style={s.textarea} placeholder={fc.memoPH} value={memo} onChange={e => setMemo(e.target.value)} />
-          <div style={{ textAlign: "right", fontFamily: FF_MONO, fontSize: 10, letterSpacing: "0.5px", color: memo.length > 0 ? COLORS.text : COLORS.muted, marginTop: 8, textTransform: "uppercase" }}>
+          <div style={{ textAlign: "right", fontFamily: FF_MONO, fontSize: 10, letterSpacing: "0.5px", color: memo.length > 0 ? t.pageText : t.pageMuted, marginTop: 8, textTransform: "uppercase" }}>
             {memo.length.toLocaleString()} CHAR
           </div>
         </div>
@@ -822,7 +822,7 @@ export default function NaverBlogApp() {
           {showStyle && (
             <>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 12 }}>
-                <div style={{ fontSize: 13, color: COLORS.muted, fontWeight: 340, letterSpacing: "-0.14px" }}>포스팅 작성 시 이 스타일을 자동 반영해요 · 자유롭게 수정 가능</div>
+                <div style={{ fontSize: 13, color: t.pageMuted, fontWeight: 400, letterSpacing: "-0.01em" }}>포스팅 작성 시 이 스타일을 자동 반영해요 · 자유롭게 수정 가능</div>
                 {myStyle !== DEFAULT_MY_STYLE && (
                   <button onClick={() => setMyStyle(DEFAULT_MY_STYLE)} style={{
                     padding: "6px 14px", borderRadius: 8, fontSize: 12, fontWeight: 500,
@@ -848,30 +848,30 @@ export default function NaverBlogApp() {
           <div style={{ ...s.card, marginTop: 20 }} className="nb-card">
             <div className="nb-sec-title" style={s.secTitle}>🔑 트렌드 키워드</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {keywords.map((kw, i) => <span key={i} style={s.kwTag}>#{kw}</span>)}
+              {keywords.map((kw, i) => <span key={i} style={{ ...s.kwTag, background: t.toggleBg, color: t.pageText }}>#{kw}</span>)}
             </div>
           </div>
         )}
 
         {result && !loading && (
-          <div style={{ background: COLORS.bg, borderRadius: 16, border: "none", marginTop: 20, overflow: "hidden", boxShadow: SHADOW_LG }} className="nb-card nb-card-result">
+          <div style={{ background: t.cardBg, borderRadius: 16, border: `1px solid ${t.cardBorder}`, marginTop: 20, overflow: "hidden", boxShadow: t.cardShadow }} className="nb-card nb-card-result">
             <div style={{ height: 4, background: GRADIENT }} />
             <div style={{ padding: 24 }}>
               <div className="nb-result-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
-                <div style={{ fontFamily: FF_SANS, fontSize: 24, fontWeight: 700, letterSpacing: "-0.26px", lineHeight: 1.35, color: COLORS.text }}>✅ 완성된 포스팅</div>
+                <div style={{ fontFamily: FF_SANS, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.35, color: t.pageText }}>✅ 완성된 포스팅</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: FF_MONO, fontSize: 10, fontWeight: 400, color: COLORS.text, background: COLORS.accentLight, padding: "5px 12px 6px", borderRadius: 50, letterSpacing: "0.5px", textTransform: "uppercase" }}>
+                  <span style={{ fontFamily: FF_MONO, fontSize: 10, fontWeight: 500, color: t.pageMuted, background: t.toggleBg, padding: "5px 12px 6px", borderRadius: 50, letterSpacing: "0.5px", textTransform: "uppercase" }}>
                     {result.length.toLocaleString()} CHAR
                   </span>
-                  <button style={s.copyBtn} onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
-                    {copied ? "✓ COPIED" : "COPY TEXT"}
+                  <button style={{ padding: "8px 16px", borderRadius: 20, background: t.toggleBg, color: t.pageText, fontSize: 13, fontWeight: 500, border: `1px solid ${t.pageBorder}`, cursor: "pointer", fontFamily: FF_SANS }} onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
+                    {copied ? "✓ 복사됨" : "텍스트 복사"}
                   </button>
-                  <button style={s.copyBtnDark} onClick={copyHTML}>
-                    {htmlCopied ? "✓ COPIED" : "COPY HTML"}
+                  <button style={{ padding: "8px 16px", borderRadius: 20, background: COLORS.accent, color: "#ffffff", fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: FF_SANS }} onClick={copyHTML}>
+                    {htmlCopied ? "✓ 복사됨" : "HTML 복사"}
                   </button>
                 </div>
               </div>
-              <div style={{ fontSize: 15, lineHeight: 1.9, whiteSpace: "pre-wrap", wordBreak: "break-word", fontWeight: 340, letterSpacing: "-0.14px", color: COLORS.text }}>{result}</div>
+              <div style={{ fontSize: 15, lineHeight: 1.9, whiteSpace: "pre-wrap", wordBreak: "break-word", fontWeight: 400, letterSpacing: "-0.01em", color: t.pageText }}>{result}</div>
             </div>
           </div>
         )}
