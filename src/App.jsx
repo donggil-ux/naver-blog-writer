@@ -47,40 +47,58 @@ const SHADOW_SM = "0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)";
 const SHADOW_MD = "0 4px 14px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)";
 const SHADOW_LG = "0 8px 30px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.04)";
 
-// Apple 라이트/다크 테마
+// 라이트/다크 테마 — 모든 색상 명시적 지정
 const THEMES = {
   light: {
-    pageBg: COLORS.surfaceLight,
-    pageText: COLORS.text,
-    pageMuted: COLORS.muted,
-    pageBorder: COLORS.border,
-    headerBg: "rgba(255,255,255,0.72)",
+    pageBg: "#F3F4F6",
+    pageText: "#111827",
+    pageMuted: "#6B7280",
+    pageBorder: "#E5E7EB",
+    headerBg: "rgba(243,244,246,0.80)",
     headerBlur: "saturate(180%) blur(20px)",
-    tabActiveBg: COLORS.text,
-    tabActiveText: "#ffffff",
-    tabBorder: COLORS.border,
-    tabInactiveText: COLORS.text,
-    cardBg: "#ffffff",
+    tabActiveBg: "#FFFFFF",
+    tabActiveText: "#111827",
+    tabBorder: "#E5E7EB",
+    tabInactiveText: "#6B7280",
+    cardBg: "#FFFFFF",
+    cardBorder: "#E5E7EB",
     cardShadow: SHADOW_SM,
-    inputBg: COLORS.surfaceLight,
+    inputBg: "#FFFFFF",
+    inputText: "#111827",
+    labelColor: "#374151",
+    searchBtnBg: "#111827",
+    searchBtnText: "#FFFFFF",
+    receiptBg: "transparent",
+    receiptBorder: "#9CA3AF",
+    receiptText: "#374151",
+    toggleBg: "#E5E7EB",
     logoBg: COLORS.accent,
     logoText: "#ffffff",
     focusOutline: COLORS.accent,
   },
   dark: {
-    pageBg: "#000000",
-    pageText: "#f5f5f7",
-    pageMuted: "#86868b",
-    pageBorder: "rgba(255,255,255,0.15)",
-    headerBg: "rgba(28,28,30,0.80)",
+    pageBg: "#111827",
+    pageText: "#F9FAFB",
+    pageMuted: "#9CA3AF",
+    pageBorder: "#374151",
+    headerBg: "rgba(17,24,39,0.85)",
     headerBlur: "saturate(180%) blur(20px)",
-    tabActiveBg: "#ffffff",
-    tabActiveText: "#1d1d1f",
-    tabBorder: "rgba(255,255,255,0.2)",
-    tabInactiveText: "#f5f5f7",
-    cardBg: COLORS.cardDark,
+    tabActiveBg: "#374151",
+    tabActiveText: "#F9FAFB",
+    tabBorder: "#374151",
+    tabInactiveText: "#9CA3AF",
+    cardBg: "#1F2937",
+    cardBorder: "#374151",
     cardShadow: "0 2px 10px rgba(0,0,0,0.3)",
-    inputBg: "rgba(255,255,255,0.08)",
+    inputBg: "#1F2937",
+    inputText: "#F3F4F6",
+    labelColor: "#D1D5DB",
+    searchBtnBg: "#4B5563",
+    searchBtnText: "#F9FAFB",
+    receiptBg: "#1F2937",
+    receiptBorder: "#4B5563",
+    receiptText: "#F9FAFB",
+    toggleBg: "#374151",
     logoBg: COLORS.accent,
     logoText: "#ffffff",
     focusOutline: COLORS.accent,
@@ -580,12 +598,19 @@ export default function NaverBlogApp() {
           .nb-body{max-width:720px!important;padding:48px 28px 140px!important}
           .nb-photo,.nb-addphoto{width:96px!important;height:96px!important}
         }
-        /* Apple 다크 모드 — 카드/인풋 오버라이드 */
-        .theme-dark .nb-card{background:#2c2c2e!important;box-shadow:0 2px 10px rgba(0,0,0,0.3)!important;border:none!important}
-        .theme-dark input,.theme-dark textarea{background:rgba(255,255,255,0.08)!important;border-color:rgba(255,255,255,0.15)!important;color:#f5f5f7!important}
+        /* 라이트 모드 — 카드/인풋 */
+        .theme-light .nb-card{background:#FFFFFF!important;border:1px solid #E5E7EB!important}
+        .theme-light ::placeholder{color:#9CA3AF!important}
+        .theme-light .nb-sec-title{color:#111827!important}
+        .theme-light label{color:#374151!important}
+        .theme-dark label{color:#D1D5DB!important}
+        /* 다크 모드 — 카드/인풋 */
+        .theme-dark .nb-card{background:#1F2937!important;border:1px solid #374151!important;box-shadow:0 2px 10px rgba(0,0,0,0.3)!important}
+        .theme-dark input,.theme-dark textarea{background:#1F2937!important;border-color:#374151!important;color:#F3F4F6!important}
         .theme-dark input:focus,.theme-dark textarea:focus{border-color:#007AFF!important;box-shadow:0 0 0 3px rgba(0,122,255,0.3)!important}
-        .theme-dark .nb-sec-title{color:#f5f5f7!important}
-        .theme-dark .nb-card-result{background:#2c2c2e!important;border-color:rgba(255,255,255,0.15)!important}
+        .theme-dark ::placeholder{color:#6B7280!important}
+        .theme-dark .nb-sec-title{color:#F9FAFB!important}
+        .theme-dark .nb-card-result{background:#1F2937!important;border-color:#374151!important}
       `}</style>
 
       <div style={{ ...s.header, background: t.headerBg, backdropFilter: t.headerBlur, WebkitBackdropFilter: t.headerBlur, borderBottom: `0.5px solid ${t.pageBorder}` }} className="nb-header">
@@ -598,7 +623,7 @@ export default function NaverBlogApp() {
         </div>
         <button onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? "라이트 모드" : "다크 모드"} style={{
           width: 34, height: 34, borderRadius: 10,
-          background: theme === "dark" ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.05)",
+          background: t.toggleBg,
           border: "none", color: t.pageText, cursor: "pointer",
           fontSize: 16, lineHeight: 1,
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -615,16 +640,16 @@ export default function NaverBlogApp() {
         </div>
 
         {/* 카테고리 탭 — Apple Segmented Control 스타일 */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 28, background: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)", borderRadius: 12, padding: 3 }}>
+        <div style={{ display: "flex", gap: 0, marginBottom: 28, background: theme === "dark" ? "#1F2937" : "#E5E7EB", borderRadius: 12, padding: 3 }}>
           {CATEGORIES.map(c => {
             const active = category === c.id;
             return (
               <button key={c.id} onClick={() => resetForm(c.id)} className="nb-tab" style={{
                 flex: 1, padding: "10px 8px", borderRadius: 10,
                 border: "none",
-                background: active ? t.cardBg : "transparent",
-                color: active ? (theme === "dark" ? "#1d1d1f" : COLORS.text) : t.pageMuted,
-                boxShadow: active ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
+                background: active ? t.tabActiveBg : "transparent",
+                color: active ? t.tabActiveText : t.tabInactiveText,
+                boxShadow: active ? "0 1px 4px rgba(0,0,0,0.15)" : "none",
                 fontWeight: active ? 600 : 400, fontSize: 14, fontFamily: FF_SANS, letterSpacing: "-0.01em",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
                 transition: "all 0.2s ease",
@@ -647,8 +672,8 @@ export default function NaverBlogApp() {
                 onChange={e => setName(e.target.value)} />
               <button onClick={fetchStoreInfo} disabled={searching || !name.trim()} style={{
                 padding: "0 22px 2px", borderRadius: 50, border: "none",
-                background: searching || !name.trim() ? COLORS.accentLight : COLORS.text,
-                color: searching || !name.trim() ? COLORS.muted : COLORS.bg,
+                background: searching || !name.trim() ? t.pageBorder : t.searchBtnBg,
+                color: searching || !name.trim() ? t.pageMuted : t.searchBtnText,
                 fontSize: 13, fontWeight: 480, cursor: searching || !name.trim() ? "not-allowed" : "pointer",
                 whiteSpace: "nowrap", minWidth: 80, fontFamily: FF_SANS, letterSpacing: "-0.14px",
               }}>{searching ? "검색중" : "검색"}</button>
@@ -713,8 +738,8 @@ export default function NaverBlogApp() {
             <label style={s.label}>{fc.menusLabel}</label>
             <input style={s.input} placeholder={fc.menusPH} value={menus} onChange={e => setMenus(e.target.value)} />
             <button onClick={() => receiptRef.current?.click()} disabled={scanning} style={{
-              marginTop: 16, padding: "12px 24px 14px", borderRadius: 50, border: `2px solid ${COLORS.text}`,
-              background: COLORS.bg, color: COLORS.text, width: "100%",
+              marginTop: 16, padding: "12px 24px 14px", borderRadius: 50, border: `2px solid ${t.receiptBorder}`,
+              background: t.receiptBg, color: t.receiptText, width: "100%",
               fontSize: 14, fontWeight: 480, cursor: scanning ? "not-allowed" : "pointer",
               fontFamily: FF_SANS, letterSpacing: "-0.14px",
               opacity: scanning ? 0.6 : 1,
