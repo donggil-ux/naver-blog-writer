@@ -402,17 +402,15 @@ export default function StoreSearchInput({ onSelect, placeholder, useMock = fals
                   className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-[13px] text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-900"
                 />
                 {!loadingDetail && !breakTime && (
-                  <p className="mt-1 text-[11px] text-neutral-400">
-                    정보 없음 —{' '}
-                    <a
-                      href={`https://map.naver.com/p/search/${encodeURIComponent(stripHtml(selected!.title))}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline hover:text-neutral-600"
-                    >
-                      네이버 지도에서 확인
-                    </a>
-                  </p>
+                  <a
+                    href={`https://map.naver.com/p/search/${encodeURIComponent(stripHtml(selected!.title))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1.5 flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[12px] font-medium text-blue-600 hover:bg-blue-100"
+                  >
+                    <MapPin size={12} />
+                    네이버 지도에서 브레이크타임 확인
+                  </a>
                 )}
               </div>
             </div>
