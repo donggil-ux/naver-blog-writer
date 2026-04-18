@@ -1,6 +1,38 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor,
+  useSensor, useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, arrayMove,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import BriefPlanner from "./components/BriefPlanner.tsx";
 import StoreSearchInput from "./components/StoreSearchInput.tsx";
+
+function SortablePhoto({ photo, index, onRemove, thumbStyle, COLORS, FF_MONO }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.url + index });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    cursor: "grab",
+    touchAction: "none",
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <img src={photo.url} alt={photo.name} style={thumbStyle} draggable={false} />
+      <div style={{ position: "absolute", bottom: 6, left: 6, background: COLORS.text, color: COLORS.bg, fontSize: 10, fontWeight: 540, padding: "2px 8px", borderRadius: 50, fontFamily: FF_MONO, letterSpacing: "0.4px" }}>{index + 1}</div>
+      <button
+        onPointerDown={e => e.stopPropagation()}
+        onClick={e => { e.stopPropagation(); onRemove(index); }}
+        style={{ position: "absolute", top: -7, right: -7, width: 22, height: 22, borderRadius: "50%", background: COLORS.text, color: COLORS.bg, border: `2px solid ${COLORS.bg}`, fontSize: 11, cursor: "pointer", lineHeight: "18px", textAlign: "center", padding: 0, fontWeight: 540 }}
+      >✕</button>
+    </div>
+  );
+}
 
 const DEFAULT_OUTLINES = {
   food:    ["방문 계기", "매장 분위기와 위치", "메뉴 후기", "총평"],
@@ -342,9 +374,11 @@ export default function NaverBlogApp() {
   const lastMenuFetchedRef = useRef("");
   const fileRef = useRef();
   const receiptRef = useRef();
-  const dragIdx = useRef(null);
   const [scanning, setScanning] = useState(false);
-  const [dragOver, setDragOver] = useState(null);
+  const photoSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  );
 
   // ── 임시저장 ──
   const [draftStatus, setDraftStatus] = useState("");
@@ -945,36 +979,37 @@ export default function NaverBlogApp() {
         <div style={s.card} className="nb-card">
           <div className="nb-sec-title" style={s.secTitle}>📸 사진 첨부</div>
           <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 16, fontWeight: 340, letterSpacing: "-0.14px" }}>사진을 올리면 AI가 내용을 파악해 글에 반영해요 · 드래그로 순서 변경 가능</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {photos.map((p, i) => (
-              <div
-                key={p.url + i}
-                draggable
-                onDragStart={() => { dragIdx.current = i; }}
-                onDragOver={e => { e.preventDefault(); if (dragOver !== i) setDragOver(i); }}
-                onDragLeave={() => setDragOver(null)}
-                onDrop={e => { e.preventDefault(); reorderPhotos(dragIdx.current, i); dragIdx.current = null; setDragOver(null); }}
-                onDragEnd={() => { dragIdx.current = null; setDragOver(null); }}
-                style={{
-                  position: "relative",
-                  cursor: "grab",
-                  transform: dragOver === i ? "scale(1.06)" : "scale(1)",
-                  transition: "transform 0.15s",
-                  outline: dragOver === i ? `2px solid ${COLORS.accent}` : "none",
-                  outlineOffset: 2,
-                  borderRadius: 10,
-                }}
-              >
-                <img src={p.url} alt={p.name} style={s.photoThumb} draggable={false} />
-                <div style={{ position: "absolute", bottom: 6, left: 6, background: COLORS.text, color: COLORS.bg, fontSize: 10, fontWeight: 540, padding: "2px 8px", borderRadius: 50, fontFamily: FF_MONO, letterSpacing: "0.4px" }}>{i + 1}</div>
-                <button onClick={() => setPhotos(prev => prev.filter((_, j) => j !== i))}
-                  style={{ position: "absolute", top: -7, right: -7, width: 22, height: 22, borderRadius: "50%", background: COLORS.text, color: COLORS.bg, border: `2px solid ${COLORS.bg}`, fontSize: 11, cursor: "pointer", lineHeight: "18px", textAlign: "center", padding: 0, fontWeight: 540 }}>✕</button>
+          <DndContext
+            sensors={photoSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={({ active, over }) => {
+              if (!over || active.id === over.id) return;
+              setPhotos(prev => {
+                const oldIdx = prev.findIndex((p, i) => p.url + i === active.id);
+                const newIdx = prev.findIndex((p, i) => p.url + i === over.id);
+                return arrayMove(prev, oldIdx, newIdx);
+              });
+            }}
+          >
+            <SortableContext items={photos.map((p, i) => p.url + i)} strategy={horizontalListSortingStrategy}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {photos.map((p, i) => (
+                  <SortablePhoto
+                    key={p.url + i}
+                    photo={p}
+                    index={i}
+                    onRemove={idx => setPhotos(prev => prev.filter((_, j) => j !== idx))}
+                    thumbStyle={s.photoThumb}
+                    COLORS={COLORS}
+                    FF_MONO={FF_MONO}
+                  />
+                ))}
+                <div style={s.addPhoto} onClick={() => fileRef.current.click()}>
+                  <span style={{ fontSize: 22, fontFamily: FF_SANS, fontWeight: 320 }}>+</span><span>ADD</span>
+                </div>
               </div>
-            ))}
-            <div style={s.addPhoto} onClick={() => fileRef.current.click()}>
-              <span style={{ fontSize: 22, fontFamily: FF_SANS, fontWeight: 320 }}>+</span><span>ADD</span>
-            </div>
-          </div>
+            </SortableContext>
+          </DndContext>
           <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: "none" }}
             onChange={e => {
               Promise.all(Array.from(e.target.files).map(f => new Promise(res => { const r = new FileReader(); r.onload = () => res({ url: r.result, name: f.name }); r.readAsDataURL(f); })))
