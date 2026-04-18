@@ -148,17 +148,34 @@ export default function StoreSearchInput({ onSelect, placeholder, useMock = fals
           await new Promise((r) => setTimeout(r, 400));
           detailPart = { ...MOCK_PLACE_DETAIL, placeId: undefined };
         } else {
-          const url = `/api/google-places?query=${encodeURIComponent(cleanName)}&address=${encodeURIComponent(address)}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          if (data.error) throw new Error(data.error);
-          detailPart = {
-            hours: data.hours || '',
-            closed: data.closed || '',
-            breakTime: data.breakTime || '',
-            matched: !!data.matched,
-            placeId: data.placeId,
-          };
+          const naverRes = await fetch(
+            `/api/naver-hours?query=${encodeURIComponent(cleanName)}&address=${encodeURIComponent(address)}`
+          );
+          const naverData = await naverRes.json();
+
+          if (!naverData.error && naverData.matched && naverData.hours) {
+            detailPart = {
+              hours: naverData.hours || '',
+              closed: naverData.closed || '',
+              breakTime: naverData.breakTime || '',
+              matched: true,
+              placeId: naverData.placeId,
+            };
+          } else {
+            // fallback to Google Places
+            const gRes = await fetch(
+              `/api/google-places?query=${encodeURIComponent(cleanName)}&address=${encodeURIComponent(address)}`
+            );
+            const gData = await gRes.json();
+            if (gData.error) throw new Error(gData.error);
+            detailPart = {
+              hours: gData.hours || '',
+              closed: gData.closed || '',
+              breakTime: gData.breakTime || '',
+              matched: !!gData.matched,
+              placeId: gData.placeId,
+            };
+          }
         }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : '영업시간 조회 실패';
