@@ -534,26 +534,27 @@ export default function NaverBlogApp() {
     lastMenuFetchedRef.current = detail.name;
 
     try {
-      const blogRes = await fetch(`/api/naver-blog?query=${encodeURIComponent(`${detail.name} 메뉴 가격`)}`);
-      const blogData = await blogRes.json();
-      const blogText = (blogData.items || []).map(b => `${b.title} ${b.description}`.replace(/<[^>]*>/g, "")).join(" ");
-      const priceMatches = blogText.match(/[가-힣a-zA-Z\s]{2,15}\s?\d{1,3}[,.]?\d{3}원/g) || [];
-      const seen = new Set();
-      const blogMenus = priceMatches
-        .map(m => m.trim())
-        .filter(m => {
-          const key = m.replace(/\s/g, "").toLowerCase();
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        })
+      const system = [
+        "너는 식당/카페 메뉴 리서처다. Google 검색으로 '가게 이름 + 주소'에 해당하는 실제 매장의 대표 메뉴와 가격을 찾아라.",
+        "출력 규칙:",
+        "- 한 줄에 하나씩, '메뉴명 가격원' 형식으로만 출력 (예: 아메리카노 4500원).",
+        "- 최대 8개. 머리말, 번호, 설명, 마크다운, 인용 없이 결과 라인만 출력.",
+        "- 가격을 확실히 찾은 메뉴만 포함. 가격이 불분명하면 제외.",
+        "- 동일/유사 메뉴 중복 금지.",
+      ].join("\n");
+      const userMsg = `가게: ${detail.name}\n주소: ${detail.address || ""}\n카테고리: ${detail.category || ""}\n이 매장의 대표 메뉴와 가격을 알려줘.`;
+      const text = await searchWithWeb(userMsg, system, 600);
+      const menuList = (text || "")
+        .split("\n")
+        .map(l => l.replace(/^[\s\-•*\d.)]+/, "").trim())
+        .filter(l => /\d{2,3}[,.]?\d{3}\s*원/.test(l))
         .slice(0, 8);
-      if (blogMenus.length > 0) {
-        setStoreInfo(prev => prev ? { ...prev, menus: blogMenus } : prev);
-        if (!menus) setMenus(blogMenus.join(", "));
+      if (menuList.length > 0) {
+        setStoreInfo(prev => prev ? { ...prev, menus: menuList } : prev);
+        if (!menus) setMenus(menuList.join(", "));
       }
     } catch {
-      /* 블로그 메뉴 조회 실패해도 선택 정보는 유지 */
+      /* 메뉴 조회 실패해도 선택 정보는 유지 */
     }
   };
 
