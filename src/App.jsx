@@ -870,7 +870,7 @@ export default function NaverBlogApp() {
             <div style={s.col}>
               <label style={s.label}>{fc.dateLabel}</label>
               <div style={{ position: "relative" }}>
-                <input type="date" style={{ ...s.input, color: date ? t.pageText : "transparent", WebkitTextFillColor: date ? t.pageText : "transparent" }} value={date} onChange={e => setDate(e.target.value)} />
+                <input type="date" style={{ ...s.input, color: date ? t.pageText : "transparent", WebkitTextFillColor: date ? t.pageText : "transparent", cursor: "pointer" }} value={date} onChange={e => setDate(e.target.value)} onClick={e => { try { e.currentTarget.showPicker?.(); } catch {} }} onFocus={e => { try { e.currentTarget.showPicker?.(); } catch {} }} />
                 {!date && (
                   <div style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: t.pageMuted, pointerEvents: "none", fontSize: 15, fontWeight: 400, letterSpacing: "-0.14px", fontFamily: FF_SANS }}>
                     📅 날짜 선택
