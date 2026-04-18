@@ -401,6 +401,19 @@ export default function StoreSearchInput({ onSelect, placeholder, useMock = fals
                   aria-label="브레이크타임"
                   className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-[13px] text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-900"
                 />
+                {!loadingDetail && !breakTime && (
+                  <p className="mt-1 text-[11px] text-neutral-400">
+                    정보 없음 —{' '}
+                    <a
+                      href={`https://map.naver.com/p/search/${encodeURIComponent(stripHtml(selected!.title))}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-neutral-600"
+                    >
+                      네이버 지도에서 확인
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
 
