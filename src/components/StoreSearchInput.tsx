@@ -373,7 +373,7 @@ export default function StoreSearchInput({ onSelect, placeholder, useMock = fals
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-[12px] font-medium text-neutral-500">휴무일</label>
                 <input
@@ -387,6 +387,17 @@ export default function StoreSearchInput({ onSelect, placeholder, useMock = fals
                   aria-label="휴무일"
                   className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-[13px] text-neutral-900 outline-none placeholder:text-neutral-400 focus:border-neutral-900"
                 />
+                {!loadingDetail && !closed && (
+                  <a
+                    href={`https://map.naver.com/p/search/${encodeURIComponent(stripHtml(selected!.title))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1.5 flex min-h-[44px] items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] font-medium text-blue-600 hover:bg-blue-100 active:bg-blue-200"
+                  >
+                    <MapPin size={13} className="flex-none" />
+                    네이버 지도에서 휴무일 확인
+                  </a>
+                )}
               </div>
               <div>
                 <label className="mb-1 block text-[12px] font-medium text-neutral-500">브레이크타임</label>
@@ -406,9 +417,9 @@ export default function StoreSearchInput({ onSelect, placeholder, useMock = fals
                     href={`https://map.naver.com/p/search/${encodeURIComponent(stripHtml(selected!.title))}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1.5 flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[12px] font-medium text-blue-600 hover:bg-blue-100"
+                    className="mt-1.5 flex min-h-[44px] items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] font-medium text-blue-600 hover:bg-blue-100 active:bg-blue-200"
                   >
-                    <MapPin size={12} />
+                    <MapPin size={13} className="flex-none" />
                     네이버 지도에서 브레이크타임 확인
                   </a>
                 )}
