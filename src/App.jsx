@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import BriefPlanner from "./components/BriefPlanner.tsx";
+import StoreSearchInput from "./components/StoreSearchInput.tsx";
 
 const DEFAULT_OUTLINES = {
   food:    ["방문 계기", "매장 분위기와 위치", "메뉴 후기", "총평"],
@@ -185,12 +186,6 @@ const FIELD_CONFIG = {
   daily:   { nameLabel: "주제 *", namePH: "예: 다이슨 에어랩 3개월 사용 후기", locLabel: "구매처 / 장소", dateLabel: "날짜", menusLabel: "가격", menusPH: "예: 699,000원", memoPH: "사용 경험, 느낀 점\n예: 열 손상 적음, 볼륨 잘 살아남, 조금 무거움", showTarget: true, targetLabel: "추천 대상", targetPH: "예: 직모, 웨이브 원하는 분" },
 };
 
-const SEARCH_LABEL = {
-  food: "네이버에서 가게 정보 검색 중...",
-  culture: "전시/공연 정보 검색 중...",
-  daily: "관련 정보 검색 중...",
-};
-
 const SYSTEM_PROMPT = {
   food: (style) => `너는 네이버 블로그 맛집/카페 전담 카피라이터 겸 SEO 전문가야.${style}
 [규칙] 어투: ~해요 친근한 대화체 / 서론: 독자 공감 TMI 1~2문장으로 시작 / 구조: 서론→본론1(분위기)→본론2(메뉴/맛 솔직후기)→결론 / 단락 2~3문장+빈줄 / 문장 짧게 (한 문장 40자 내외) / 키워드 4~6회 자연 배치 / [이미지 첨부: 설명] 위치 명시 / 900~1200자 (모바일 가독성 우선 — 길게 늘이지 말 것)
@@ -343,9 +338,8 @@ export default function NaverBlogApp() {
   const [bodyGenerating, setBodyGenerating] = useState(false);
   const [copied, setCopied]     = useState(false);
   const [htmlCopied, setHtmlCopied] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [storeInfo, setStoreInfo] = useState(null);
-  const [searchError, setSearchError] = useState("");
+  const lastMenuFetchedRef = useRef("");
   const fileRef = useRef();
   const receiptRef = useRef();
   const dragIdx = useRef(null);
@@ -488,7 +482,8 @@ export default function NaverBlogApp() {
 
   const resetForm = (cat) => {
     setCategory(cat); setName(""); setLocation(""); setDate(""); setMenus(""); setTarget(""); setMemo("");
-    setPhotos([]); setStoreInfo(null); setSearchError(""); setResult(null); setKeywords([]);
+    setPhotos([]); setStoreInfo(null); setResult(null); setKeywords([]);
+    lastMenuFetchedRef.current = "";
   };
 
   // Vercel 서버리스 프록시 경유 (Google Gemini API)
@@ -516,81 +511,50 @@ export default function NaverBlogApp() {
     });
   };
 
-  // 쿼리 정규화 — 대소문자/공백 관계없이 검색
-  const normalizeQuery = (q) => q.trim().replace(/\s+/g, " ");
-  const queryVariants = (q) => {
-    const base = normalizeQuery(q);
-    const noSpace = base.replace(/\s/g, "");
-    // 영문↔한글 경계에 공백 삽입 (예: THE나은버거 → THE 나은버거)
-    const withGap = noSpace.replace(/([a-zA-Z])([가-힣])/g, "$1 $2").replace(/([가-힣])([a-zA-Z])/g, "$1 $2");
-    const variants = [base];
-    if (noSpace !== base) variants.push(noSpace);
-    if (withGap !== base && withGap !== noSpace) variants.push(withGap);
-    return variants;
-  };
+  // 가게 선택/편집 시 — StoreSearchInput 의 onSelect 콜백
+  // 영업시간/휴무/브레이크 편집 시에도 호출되므로, 블로그 메뉴 재조회는 name 변경 시에만 수행.
+  const handleSelectStore = async (detail) => {
+    setName(detail.name);
+    if (detail.address) setLocation(detail.address);
 
-  const searchNaver = async (query) => {
-    const res = await fetch(`/api/naver-local?query=${encodeURIComponent(query)}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return data.items || [];
-  };
+    const isNewSelection = lastMenuFetchedRef.current !== detail.name;
+    setStoreInfo({
+      name: detail.name,
+      location: detail.address,
+      hours: detail.hours || "",
+      closed: detail.closed || "",
+      breakTime: detail.breakTime || "",
+      menus: isNewSelection ? [] : (storeInfo?.menus || []),
+      parking: "",
+      phone: detail.phone || "",
+      summary: detail.category || "",
+    });
 
-  // 네이버 지역 검색 API — 정확한 가게 정보 직접 조회
-  const fetchStoreInfo = async () => {
-    const label = FIELD_CONFIG[category].nameLabel.replace(" *", "");
-    if (!name.trim()) return alert(`${label}을 입력해주세요!`);
-    setSearching(true); setStoreInfo(null); setSearchError("");
+    if (!isNewSelection) return;
+    lastMenuFetchedRef.current = detail.name;
+
     try {
-      // 여러 변형으로 시도 — 첫 번째 결과가 나오면 즉시 사용
-      let items = [];
-      for (const q of queryVariants(name)) {
-        items = await searchNaver(q);
-        if (items.length > 0) break;
+      const blogRes = await fetch(`/api/naver-blog?query=${encodeURIComponent(`${detail.name} 메뉴 가격`)}`);
+      const blogData = await blogRes.json();
+      const blogText = (blogData.items || []).map(b => `${b.title} ${b.description}`.replace(/<[^>]*>/g, "")).join(" ");
+      const priceMatches = blogText.match(/[가-힣a-zA-Z\s]{2,15}\s?\d{1,3}[,.]?\d{3}원/g) || [];
+      const seen = new Set();
+      const blogMenus = priceMatches
+        .map(m => m.trim())
+        .filter(m => {
+          const key = m.replace(/\s/g, "").toLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 8);
+      if (blogMenus.length > 0) {
+        setStoreInfo(prev => prev ? { ...prev, menus: blogMenus } : prev);
+        if (!menus) setMenus(blogMenus.join(", "));
       }
-      if (items.length === 0) {
-        setSearchError("정보를 찾지 못했어요. 이름을 더 구체적으로 입력해보세요.");
-        return;
-      }
-      const top = items[0];
-      const cleanTitle = top.title.replace(/<[^>]*>/g, "");
-
-      // 네이버 블로그에서 메뉴/가격 패턴 추출
-      let blogMenus = [];
-      try {
-        const blogRes = await fetch(`/api/naver-blog?query=${encodeURIComponent(`${cleanTitle} 메뉴 가격`)}`);
-        const blogData = await blogRes.json();
-        const blogText = (blogData.items || []).map(b => `${b.title} ${b.description}`.replace(/<[^>]*>/g, "")).join(" ");
-        // "메뉴명 N,NNN원" 또는 "메뉴명 N원" 패턴 추출
-        const priceMatches = blogText.match(/[가-힣a-zA-Z\s]{2,15}\s?\d{1,3}[,.]?\d{3}원/g) || [];
-        const seen = new Set();
-        blogMenus = priceMatches
-          .map(m => m.trim())
-          .filter(m => {
-            const key = m.replace(/\s/g, "").toLowerCase();
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          })
-          .slice(0, 8);
-      } catch { /* 블로그 검색 실패해도 가게 정보는 보여줌 */ }
-
-      const info = {
-        name: cleanTitle,
-        location: top.roadAddress || top.address || "",
-        hours: "",
-        closed: "",
-        menus: blogMenus,
-        parking: "",
-        phone: top.telephone || "",
-        summary: top.category || "",
-      };
-      setStoreInfo(info);
-      if (info.location) setLocation(info.location);
-      if (blogMenus.length > 0) setMenus(blogMenus.join(", "));
-    } catch (e) {
-      setSearchError(`검색 오류: ${e.message}`);
-    } finally { setSearching(false); }
+    } catch {
+      /* 블로그 메뉴 조회 실패해도 선택 정보는 유지 */
+    }
   };
 
   // 영수증 사진 → Gemini Vision → 메뉴/가격 자동 추출
@@ -632,9 +596,9 @@ export default function NaverBlogApp() {
     const photoInfo = photos.length > 0 ? photos.map((p, i) => `사진${i+1}(${p.name})`).join(", ") : "사진 없음";
     const kwLine = kws && kws.length ? kws.join(", ") : "SEO에 맞게 자유롭게";
     return {
-      food:    `가게명: ${name}\n위치: ${location||"미입력"}\n방문일: ${date||"최근"}\n메뉴: ${menus||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
-      culture: `전시/공연명: ${name}\n장소: ${location||"미입력"}\n관람일: ${date||"최근"}\n티켓가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
-      daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      food:    `가게명: ${name}\n위치: ${location||"미입력"}\n방문일: ${date||"최근"}\n영업시간: ${storeInfo?.hours || "미입력"}\n휴무/브레이크: ${[storeInfo?.closed, storeInfo?.breakTime].filter(Boolean).join(" / ") || "없음"}\n메뉴: ${menus||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      culture: `전시/공연명: ${name}\n장소: ${location||"미입력"}\n관람일: ${date||"최근"}\n운영시간: ${storeInfo?.hours || "미입력"}\n휴무: ${storeInfo?.closed || "없음"}\n티켓가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n운영시간: ${storeInfo?.hours || "미입력"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
     }[category];
   };
 
@@ -903,51 +867,26 @@ export default function NaverBlogApp() {
 
           <div style={{ marginBottom: 12 }}>
             <label style={s.label}>{fc.nameLabel}</label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input style={{ ...s.input, flex: 1 }} placeholder={fc.namePH} value={name}
-                onChange={e => setName(e.target.value)} />
-              <button onClick={fetchStoreInfo} disabled={searching || !name.trim()} style={{
-                padding: "0 22px 2px", borderRadius: 50, border: "none",
-                background: searching || !name.trim() ? t.pageBorder : t.searchBtnBg,
-                color: searching || !name.trim() ? t.pageMuted : t.searchBtnText,
-                fontSize: 13, fontWeight: 480, cursor: searching || !name.trim() ? "not-allowed" : "pointer",
-                whiteSpace: "nowrap", minWidth: 80, fontFamily: FF_SANS, letterSpacing: "-0.14px",
-              }}>{searching ? "검색중" : "검색"}</button>
-            </div>
+            <StoreSearchInput
+              placeholder={fc.namePH}
+              useMock={import.meta.env.VITE_USE_MOCK_STORE === "1"}
+              onSelect={handleSelectStore}
+            />
           </div>
 
-          {searching && (
-            <div style={{ padding: "14px 16px", background: COLORS.accentLight, borderRadius: 8, marginBottom: 14, fontSize: 13, color: COLORS.text, display: "flex", alignItems: "center", gap: 10, fontWeight: 340, letterSpacing: "-0.14px" }}>
-              <div style={{ width: 14, height: 14, border: `2px solid ${COLORS.text}`, borderTop: `2px solid transparent`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-              {SEARCH_LABEL[category]}
-            </div>
-          )}
-          {searchError && !searching && (
-            <div style={{ padding: "12px 16px", background: COLORS.bg, border: `1px solid ${COLORS.text}`, borderRadius: 8, marginBottom: 14, fontSize: 12, color: COLORS.text, fontWeight: 340, letterSpacing: "-0.14px" }}>
-              <span style={{ ...s.monoLabel, fontSize: 10, marginRight: 6 }}>ERROR</span>{searchError}
-            </div>
-          )}
-          {storeInfo && !searching && (
-            <div style={{ padding: "16px 18px", background: t.toggleBg, borderRadius: 8, marginBottom: 14, fontSize: 13, lineHeight: 1.75, color: t.pageText, fontWeight: 400, letterSpacing: "-0.01em" }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>✓ 검색 결과 (자동 입력됨)</div>
-              {storeInfo.location && <div>📍 {storeInfo.location}</div>}
-              {storeInfo.phone && <div>📞 {storeInfo.phone}</div>}
-              {storeInfo.summary && <div style={{ color: t.pageMuted }}>📂 {storeInfo.summary}</div>}
-              {storeInfo.menus?.length > 0 && (
-                <div style={{ marginTop: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>💡 블로그 추천 메뉴 (클릭 시 자동 입력)</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {storeInfo.menus.map((m, i) => (
-                      <button key={i} onClick={() => setMenus(m)} style={{
-                        padding: "6px 14px 8px", borderRadius: 50,
-                        background: t.cardBg, border: `1px solid ${t.pageBorder}`,
-                        color: t.pageText, fontSize: 12, fontWeight: 480,
-                        cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.1px",
-                      }}>{m}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {storeInfo?.menus?.length > 0 && (
+            <div style={{ padding: "14px 16px", background: t.toggleBg, borderRadius: 8, marginBottom: 14, fontSize: 13, color: t.pageText }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>💡 블로그 추천 메뉴 (클릭 시 자동 입력)</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {storeInfo.menus.map((m, i) => (
+                  <button key={i} onClick={() => setMenus(m)} style={{
+                    padding: "6px 14px 8px", borderRadius: 50,
+                    background: t.cardBg, border: `1px solid ${t.pageBorder}`,
+                    color: t.pageText, fontSize: 12, fontWeight: 480,
+                    cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.1px",
+                  }}>{m}</button>
+                ))}
+              </div>
             </div>
           )}
 
