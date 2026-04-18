@@ -179,6 +179,29 @@ const toNaverHTML = (text) => {
       out.push(`<h3 style="font-size:16px;font-weight:800;color:#2d6a4f;margin:22px 0 10px;">${escapeHTML(trimmed.replace(/^\[|\]$/g, ""))}</h3>`);
       i++; continue;
     }
+    if (/^-{3,}$/.test(trimmed)) {
+      out.push(`<hr style="border:none;border-top:1px solid #e5e5e5;margin:28px 0;" />`);
+      i++; continue;
+    }
+    if (trimmed.startsWith(">")) {
+      const quote = [];
+      while (i < lines.length && lines[i].trim().startsWith(">")) {
+        quote.push(lines[i].trim().replace(/^>\s?/, ""));
+        i++;
+      }
+      out.push(`<blockquote style="margin:20px 0;padding:14px 18px;border-left:3px solid #2d6a4f;background:#f3f7f4;font-size:15px;line-height:1.75;color:#333;">${inlineFormat(quote.join("<br/>"))}</blockquote>`);
+      continue;
+    }
+    if (trimmed.startsWith("- ")) {
+      const items = [];
+      while (i < lines.length && lines[i].trim().startsWith("- ")) {
+        items.push(lines[i].trim().slice(2));
+        i++;
+      }
+      const li = items.map(t => `<li style="margin:4px 0;line-height:1.8;">${inlineFormat(t)}</li>`).join("");
+      out.push(`<ul style="margin:12px 0 16px;padding-left:22px;font-size:15px;">${li}</ul>`);
+      continue;
+    }
     if (trimmed.startsWith("|")) {
       const tbl = [];
       while (i < lines.length && lines[i].trim().startsWith("|")) { tbl.push(lines[i].trim()); i++; }
@@ -186,8 +209,14 @@ const toNaverHTML = (text) => {
       continue;
     }
     if (/^\d+\.\s/.test(trimmed)) {
-      out.push(`<p style="line-height:1.85;margin:0 0 6px;">${inlineFormat(trimmed)}</p>`);
-      i++; continue;
+      const items = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+        items.push(lines[i].trim().replace(/^\d+\.\s+/, ""));
+        i++;
+      }
+      const li = items.map(t => `<li style="margin:4px 0;line-height:1.8;">${inlineFormat(t)}</li>`).join("");
+      out.push(`<ol style="margin:12px 0 16px;padding-left:22px;font-size:15px;">${li}</ol>`);
+      continue;
     }
     if (trimmed.startsWith("#")) {
       out.push(`<p style="line-height:1.85;margin:10px 0;color:#2d6a4f;font-weight:600;">${escapeHTML(trimmed)}</p>`);
@@ -196,7 +225,7 @@ const toNaverHTML = (text) => {
     const para = [];
     while (i < lines.length) {
       const t = lines[i].trim();
-      if (!t || /^\[.+\]$/.test(t) || t.startsWith("|") || t.startsWith("#") || /^\d+\.\s/.test(t)) break;
+      if (!t || /^\[.+\]$/.test(t) || t.startsWith("|") || t.startsWith("#") || t.startsWith(">") || t.startsWith("- ") || /^-{3,}$/.test(t) || /^\d+\.\s/.test(t)) break;
       para.push(t); i++;
     }
     if (para.length) {
@@ -222,6 +251,10 @@ const SYSTEM_PROMPT = {
   food: (style) => `너는 네이버 블로그 맛집/카페 전담 카피라이터 겸 SEO 전문가야.${style}
 [규칙] 어투: ~해요 친근한 대화체 / 서론: 독자 공감 TMI 1~2문장으로 시작 / 구조: 서론→본론1(분위기)→본론2(메뉴/맛 솔직후기)→결론 / 단락 2~3문장+빈줄 / 문장 짧게 (한 문장 40자 내외) / 키워드 4~6회 자연 배치 / [이미지 첨부: 설명] 위치 명시 / 900~1200자 (모바일 가독성 우선 — 길게 늘이지 말 것)
 [제목 규칙] 20~28자 / 이모지·느낌표·물음표·말줄임표 금지 / 핵심 키워드 1~2개 자연 포함 / 과장 표현(인생, 최고, 완벽, 대박) 지양 / 상위 블로그 제목 참고 시 톤·리듬만 차용, 문구 그대로 쓰지 말 것
+[마크업] 본문 안에서 아래 마크업을 적극 활용해 네이버 에디터 느낌으로 작성:
+- 핵심 팁·강조 한두 문장은 '> '로 시작 (인용구 처리, 본문당 1~2번)
+- 주요 단락 전환부에 '---' 한 줄 (구분선)
+- 특징·장단점·추천 포인트 등 나열 항목은 '- '로 불릿 (3~5개)
 [출력형식]
 [추천 제목 3가지]
 1.
@@ -244,6 +277,10 @@ const SYSTEM_PROMPT = {
   culture: (style) => `너는 네이버 블로그 문화생활(전시/공연/팝업) 전담 카피라이터 겸 SEO 전문가야.${style}
 [규칙] 어투: ~해요 친근한 대화체 / 서론: 설레는 방문 계기 1~2문장 / 구조: 서론→본론1(공간/구성 소개)→본론2(관람 포인트/솔직 후기)→결론(추천 대상) / 단락 2~3문장+빈줄 / 문장 짧게 (한 문장 40자 내외) / 키워드 4~6회 자연 배치 / [이미지 첨부: 설명] 위치 명시 / 900~1200자 (모바일 가독성 우선 — 길게 늘이지 말 것)
 [제목 규칙] 20~28자 / 이모지·느낌표·물음표·말줄임표 금지 / 핵심 키워드 1~2개 자연 포함 / 과장 표현(인생, 최고, 완벽, 대박) 지양 / 상위 블로그 제목 참고 시 톤·리듬만 차용, 문구 그대로 쓰지 말 것
+[마크업] 본문 안에서 아래 마크업을 적극 활용해 네이버 에디터 느낌으로 작성:
+- 핵심 팁·강조 한두 문장은 '> '로 시작 (인용구 처리, 본문당 1~2번)
+- 주요 단락 전환부에 '---' 한 줄 (구분선)
+- 특징·장단점·추천 포인트 등 나열 항목은 '- '로 불릿 (3~5개)
 [출력형식]
 [추천 제목 3가지]
 1.
@@ -267,6 +304,10 @@ const SYSTEM_PROMPT = {
   daily: (style) => `너는 네이버 블로그 일상/리뷰 전담 카피라이터 겸 SEO 전문가야.${style}
 [규칙] 어투: ~해요 친근한 대화체 / 서론: 구매/경험 계기 1~2문장 / 구조: 서론→본론1(특징 소개)→본론2(직접 써보니/솔직 장단점)→결론(추천 대상) / 단락 2~3문장+빈줄 / 문장 짧게 (한 문장 40자 내외) / 키워드 4~6회 자연 배치 / [이미지 첨부: 설명] 위치 명시 / 900~1200자 (모바일 가독성 우선 — 길게 늘이지 말 것)
 [제목 규칙] 20~28자 / 이모지·느낌표·물음표·말줄임표 금지 / 핵심 키워드 1~2개 자연 포함 / 과장 표현(인생, 최고, 완벽, 대박) 지양 / 상위 블로그 제목 참고 시 톤·리듬만 차용, 문구 그대로 쓰지 말 것
+[마크업] 본문 안에서 아래 마크업을 적극 활용해 네이버 에디터 느낌으로 작성:
+- 핵심 팁·강조 한두 문장은 '> '로 시작 (인용구 처리, 본문당 1~2번)
+- 주요 단락 전환부에 '---' 한 줄 (구분선)
+- 특징·장단점·추천 포인트 등 나열 항목은 '- '로 불릿 (3~5개)
 [출력형식]
 [추천 제목 3가지]
 1.
@@ -641,6 +682,10 @@ export default function NaverBlogApp() {
     const categoryLabel = cat === "food" ? "맛집/카페" : cat === "culture" ? "문화생활(전시/공연/팝업)" : "일상/리뷰";
     return `너는 네이버 블로그 ${categoryLabel} 전담 카피라이터 겸 SEO 전문가야.
 [제목 규칙] 20~28자 / 이모지·느낌표·물음표·말줄임표 금지 / 핵심 키워드 1~2개 자연 포함 / 과장 표현(인생, 최고, 완벽, 대박) 지양 / 상위 블로그 제목 참고 시 톤·리듬만 차용, 문구 그대로 쓰지 말 것
+[마크업] 본문 안에서 아래 마크업을 적극 활용해 네이버 에디터 느낌으로 작성:
+- 핵심 팁·강조 한두 문장은 '> '로 시작 (인용구 처리, 본문당 1~2번)
+- 주요 단락 전환부에 '---' 한 줄 (구분선)
+- 특징·장단점·추천 포인트 등 나열 항목은 '- '로 불릿 (3~5개)
 [출력형식] — 아래 형식을 정확히 따를 것. 번호와 제목만. 설명·본문·태그·요약 금지.
 1. (제목1)
 2. (제목2)
