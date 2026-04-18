@@ -1,4 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import BriefPlanner from "./components/BriefPlanner.tsx";
+
+const DEFAULT_OUTLINES = {
+  food:    ["방문 계기", "매장 분위기와 위치", "메뉴 후기", "총평"],
+  culture: ["방문 계기", "공간과 구성", "관람 포인트", "추천 대상"],
+  daily:   ["구매/사용 계기", "제품 특징", "직접 써본 장단점", "추천 대상"],
+};
 
 const DEFAULT_MY_STYLE = `앞으로 내 블로그 포스팅 초안을 작성하거나 다듬을 때는 아래의 '새밍이 블로그 글 스타일'을 반드시 지켜서 작성해 줘.
 
@@ -328,6 +335,12 @@ export default function NaverBlogApp() {
   const [loadingStep, setLoadingStep] = useState("");
   const [result, setResult]     = useState(null);
   const [keywords, setKeywords] = useState([]);
+  // ── Brief planner (제목·목차 선택 단계) ──
+  const [step, setStep] = useState("input"); // 'input' | 'planning' | 'result'
+  const [titleCandidates, setTitleCandidates] = useState([]); // [{id, text}]
+  const [plannerOutline, setPlannerOutline] = useState([]); // [{id, text}]
+  const [refBlock, setRefBlock] = useState("");
+  const [bodyGenerating, setBodyGenerating] = useState(false);
   const [copied, setCopied]     = useState(false);
   const [htmlCopied, setHtmlCopied] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -615,6 +628,40 @@ export default function NaverBlogApp() {
     reader.readAsDataURL(file);
   };
 
+  const buildUserMsg = (kws) => {
+    const photoInfo = photos.length > 0 ? photos.map((p, i) => `사진${i+1}(${p.name})`).join(", ") : "사진 없음";
+    const kwLine = kws && kws.length ? kws.join(", ") : "SEO에 맞게 자유롭게";
+    return {
+      food:    `가게명: ${name}\n위치: ${location||"미입력"}\n방문일: ${date||"최근"}\n메뉴: ${menus||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      culture: `전시/공연명: ${name}\n장소: ${location||"미입력"}\n관람일: ${date||"최근"}\n티켓가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+    }[category];
+  };
+
+  const titlePromptFor = (cat) => {
+    const categoryLabel = cat === "food" ? "맛집/카페" : cat === "culture" ? "문화생활(전시/공연/팝업)" : "일상/리뷰";
+    return `너는 네이버 블로그 ${categoryLabel} 전담 카피라이터 겸 SEO 전문가야.
+[제목 규칙] 20~28자 / 이모지·느낌표·물음표·말줄임표 금지 / 핵심 키워드 1~2개 자연 포함 / 과장 표현(인생, 최고, 완벽, 대박) 지양 / 상위 블로그 제목 참고 시 톤·리듬만 차용, 문구 그대로 쓰지 말 것
+[출력형식] — 아래 형식을 정확히 따를 것. 번호와 제목만. 설명·본문·태그·요약 금지.
+1. (제목1)
+2. (제목2)
+3. (제목3)`;
+  };
+
+  const parseTitleCandidates = (text) => {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const picked = [];
+    for (const line of lines) {
+      const m = line.match(/^(?:\d+[\.)]\s*|[-•]\s*)(.+)$/);
+      if (m) {
+        const clean = m[1].replace(/^["'“”「『]|["'“”」』]$/g, "").trim();
+        if (clean) picked.push(clean);
+      }
+      if (picked.length >= 3) break;
+    }
+    return picked;
+  };
+
   const handleGenerate = async () => {
     const label = FIELD_CONFIG[category].nameLabel.replace(" *", "");
     if (!name.trim()) return alert(`${label}을 입력해주세요!`);
@@ -639,35 +686,78 @@ export default function NaverBlogApp() {
         .slice(0, 5)
         .map(b => (b.title || "").replace(/<[^>]*>/g, "").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").trim())
         .filter(Boolean);
-      const refBlock = refTitles.length
+      const refBlockLocal = refTitles.length
         ? `\n\n[상위 노출 블로그 제목 참고 — 이 톤·길이·리듬을 따라줘. 그대로 복사 금지, 가게/주제 맞게 재구성]\n${refTitles.map((t, i) => `${i+1}. ${t}`).join("\n")}`
         : "";
+      setRefBlock(refBlockLocal);
 
-      setLoadingStep("✍️ 포스팅 작성 중...");
-      const styleGuide = myStyle.trim() ? `\n\n[중요] 아래 글의 말투·문체·리듬을 그대로 따라줘:\n---\n${myStyle}\n---` : "";
-      const photoInfo = photos.length > 0 ? photos.map((p, i) => `사진${i+1}(${p.name})`).join(", ") : "사진 없음";
-
-      const userMsg = {
-        food:    `가게명: ${name}\n위치: ${location||"미입력"}\n방문일: ${date||"최근"}\n메뉴: ${menus||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kws.length?kws.join(", "):"SEO에 맞게 자유롭게"}`,
-        culture: `전시/공연명: ${name}\n장소: ${location||"미입력"}\n관람일: ${date||"최근"}\n티켓가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kws.length?kws.join(", "):"SEO에 맞게 자유롭게"}`,
-        daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kws.length?kws.join(", "):"SEO에 맞게 자유롭게"}`,
-      }[category];
-
-      const text = await callGemini({
+      // ── 1단계: 제목 후보 3개만 생성 ──
+      setLoadingStep("🏷️ 제목 후보 생성 중...");
+      const userMsg = buildUserMsg(kws);
+      const titleText = await callGemini({
         model: "gemini-2.5-flash",
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT[category](styleGuide) }] },
-        contents: [{ role: "user", parts: [{ text: `아래 정보로 네이버 블로그 포스팅 작성해줘.\n${userMsg}${refBlock}` }] }],
-        generationConfig: { maxOutputTokens: 8000, temperature: 0.85 },
+        systemInstruction: { parts: [{ text: titlePromptFor(category) }] },
+        contents: [{ role: "user", parts: [{ text: `아래 정보로 네이버 블로그 제목 후보 3개만 뽑아줘.\n${userMsg}${refBlockLocal}` }] }],
+        generationConfig: { maxOutputTokens: 500, temperature: 0.9 },
       });
-      setResult(text);
-      saveHistory(text);
-      clearDraft();
+      const parsed = parseTitleCandidates(titleText);
+      if (parsed.length < 1) {
+        throw new Error("제목 후보 파싱에 실패했어요. 다시 시도해주세요.");
+      }
+      setTitleCandidates(parsed.map((text, i) => ({ id: `t${i+1}`, text })));
+      setPlannerOutline((DEFAULT_OUTLINES[category] || []).map((t, i) => ({ id: `o${i}`, text: t })));
+      setStep("planning");
     } catch (e) { console.error(e); alert(`오류: ${e.message}`); }
     finally { setLoading(false); setLoadingStep(""); }
   };
 
+  const handleGenerateBody = async (selectedTitle, outline) => {
+    setBodyGenerating(true);
+    try {
+      const styleGuide = myStyle.trim() ? `\n\n[중요] 아래 글의 말투·문체·리듬을 그대로 따라줘:\n---\n${myStyle}\n---` : "";
+      const userMsg = buildUserMsg(keywords);
+      const outlineBlock = outline && outline.length
+        ? `\n\n[확정 제목] ${selectedTitle}\n[이번엔 제목 후보 목록을 만들지 말고, 아래 확정 제목으로 [본문]을 작성해줘. [추천 제목 3가지] 섹션은 건너뛰고 바로 [본문]부터 출력.]\n[목차 — 이 순서대로 본문을 구성해줘]\n${outline.map((o, i) => `${i+1}. ${o.text}`).join("\n")}`
+        : `\n\n[확정 제목] ${selectedTitle}\n[이번엔 제목 후보 목록을 만들지 말고, 아래 확정 제목으로 [본문]부터 출력.]`;
+
+      const bodyText = await callGemini({
+        model: "gemini-2.5-flash",
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT[category](styleGuide) }] },
+        contents: [{ role: "user", parts: [{ text: `아래 정보로 네이버 블로그 포스팅 작성해줘.\n${userMsg}${refBlock}${outlineBlock}` }] }],
+        generationConfig: { maxOutputTokens: 8000, temperature: 0.85 },
+      });
+      const finalText = `[확정 제목]\n${selectedTitle}\n\n${bodyText}`;
+      setResult(finalText);
+      saveHistory(finalText);
+      clearDraft();
+      setStep("result");
+    } catch (e) {
+      console.error(e);
+      alert(`오류: ${e.message}`);
+    } finally {
+      setBodyGenerating(false);
+    }
+  };
+
+  const handleBackFromPlanning = () => {
+    setStep("input");
+    setTitleCandidates([]);
+  };
+
   const fc = FIELD_CONFIG[category];
   const cat = CATEGORIES.find(c => c.id === category);
+
+  if (step === "planning") {
+    return (
+      <BriefPlanner
+        titles={titleCandidates}
+        defaultOutline={plannerOutline}
+        isGenerating={bodyGenerating}
+        onSubmit={handleGenerateBody}
+        onBack={handleBackFromPlanning}
+      />
+    );
+  }
 
   return (
     <div style={{ ...s.app, background: t.pageBg, color: t.pageText }} className={`nb-root theme-${theme}`} data-theme={theme}>

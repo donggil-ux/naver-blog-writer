@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GripVertical, X, Plus } from 'lucide-react';
+import { GripVertical, X, Plus, ArrowLeft, Loader2 } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -18,21 +18,16 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-type TitleCandidate = { id: string; text: string };
-type OutlineItem = { id: string; text: string };
+export type TitleCandidate = { id: string; text: string };
+export type OutlineItem = { id: string; text: string };
 
-const DUMMY_TITLES: TitleCandidate[] = [
-  { id: 't1', text: '을지로 숨은 노포, 현지인만 아는 찐맛집 후기' },
-  { id: 't2', text: '분위기부터 가격까지 다 잡은 을지로 데이트 맛집' },
-  { id: 't3', text: '줄 서서 먹는 을지로 맛집, 솔직 방문 리뷰' },
-];
-
-const DEFAULT_OUTLINE: OutlineItem[] = [
-  { id: 'o1', text: '방문 계기' },
-  { id: 'o2', text: '매장 분위기와 위치' },
-  { id: 'o3', text: '메뉴 후기' },
-  { id: 'o4', text: '총평' },
-];
+type BriefPlannerProps = {
+  titles: TitleCandidate[];
+  defaultOutline: OutlineItem[];
+  isGenerating?: boolean;
+  onSubmit: (selectedTitle: string, outline: OutlineItem[]) => void;
+  onBack: () => void;
+};
 
 function SortableOutlineItem({
   item,
@@ -79,9 +74,15 @@ function SortableOutlineItem({
   );
 }
 
-export default function BriefPlanner() {
+export default function BriefPlanner({
+  titles,
+  defaultOutline,
+  isGenerating = false,
+  onSubmit,
+  onBack,
+}: BriefPlannerProps) {
   const [selectedTitleId, setSelectedTitleId] = useState<string | null>(null);
-  const [outline, setOutline] = useState<OutlineItem[]>(DEFAULT_OUTLINE);
+  const [outline, setOutline] = useState<OutlineItem[]>(defaultOutline);
   const [adding, setAdding] = useState(false);
   const [newItemText, setNewItemText] = useState('');
 
@@ -112,29 +113,40 @@ export default function BriefPlanner() {
     setAdding(false);
   };
 
-  const handleSubmit = () => {
-    if (!selectedTitleId) return;
-    const selected = DUMMY_TITLES.find((t) => t.id === selectedTitleId);
-    console.log('[BriefPlanner] selected title:', selected?.text);
-    console.log(
-      '[BriefPlanner] outline:',
-      outline.map((o) => o.text)
-    );
+  const handleSubmitClick = () => {
+    if (!selectedTitleId || isGenerating) return;
+    const selected = titles.find((t) => t.id === selectedTitleId);
+    if (!selected) return;
+    onSubmit(selected.text, outline);
   };
 
-  const canSubmit = !!selectedTitleId;
+  const canSubmit = !!selectedTitleId && !isGenerating;
 
   return (
     <div className="min-h-screen bg-neutral-50">
       <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col">
-        <header className="px-5 pt-8 pb-2">
+        <header className="flex items-center justify-between px-5 pt-6 pb-2">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="입력 단계로 돌아가기"
+            disabled={isGenerating}
+            className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-[13px] font-medium text-neutral-500 hover:bg-neutral-200 hover:text-neutral-800 disabled:opacity-40"
+          >
+            <ArrowLeft size={16} />
+            돌아가기
+          </button>
+          <span className="text-[12px] font-medium text-neutral-400">STEP 2 / 3</span>
+        </header>
+
+        <div className="px-5 pt-2 pb-1">
           <h1 className="text-[22px] font-bold leading-snug text-neutral-900">
             추천 제목과 목차를 확인하세요
           </h1>
           <p className="mt-2 text-[14px] leading-relaxed text-neutral-500">
             AI가 초안을 만들기 전에 글의 방향을 먼저 정리해드릴게요.
           </p>
-        </header>
+        </div>
 
         <section className="px-5 pt-6">
           <div className="mb-3 flex items-center justify-between">
@@ -142,7 +154,7 @@ export default function BriefPlanner() {
             <span className="text-[12px] text-neutral-400">1개 선택</span>
           </div>
           <ul className="space-y-2">
-            {DUMMY_TITLES.map((title) => {
+            {titles.map((title) => {
               const isSelected = selectedTitleId === title.id;
               return (
                 <li key={title.id}>
@@ -237,16 +249,23 @@ export default function BriefPlanner() {
         <div className="sticky bottom-0 left-0 right-0 border-t border-neutral-200 bg-neutral-50/95 px-5 pt-3 pb-5 backdrop-blur">
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={handleSubmitClick}
             disabled={!canSubmit}
             aria-label="이대로 글 쓰기"
-            className={`w-full rounded-xl py-4 text-[16px] font-semibold transition-colors ${
+            className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-[16px] font-semibold transition-colors ${
               canSubmit
                 ? 'bg-neutral-900 text-white hover:bg-neutral-800'
                 : 'cursor-not-allowed bg-neutral-200 text-neutral-400'
             }`}
           >
-            이대로 글 쓰기
+            {isGenerating ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                본문 생성 중…
+              </>
+            ) : (
+              '이대로 글 쓰기'
+            )}
           </button>
         </div>
       </div>
