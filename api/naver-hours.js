@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     );
 
     if (!searchRes.ok) {
-      return res.status(searchRes.status).json({ error: `Naver search ${searchRes.status}` });
+      return res.status(200).json({ hours: "", closed: "", breakTime: "", matched: false });
     }
 
     const searchData = await searchRes.json();
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
     );
 
     if (!detailRes.ok) {
-      return res.status(detailRes.status).json({ error: `Naver detail ${detailRes.status}` });
+      return res.status(200).json({ hours: "", closed: "", breakTime: "", matched: false });
     }
 
     const detail = await detailRes.json();
