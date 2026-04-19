@@ -404,7 +404,7 @@ export default function NaverBlogApp() {
       localStorage.setItem("nb-my-style", myStyle);
     }
   }, [myStyle]);
-  const [showStyle, setShowStyle] = useState(true);
+  const [showStyle, setShowStyle] = useState(false);
   const [photos, setPhotos]     = useState([]);
   const [loading, setLoading]   = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
