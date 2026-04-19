@@ -1167,16 +1167,8 @@ export default function NaverBlogApp() {
           )}
         </div>
 
-        {/* 생성 + 임시저장 버튼 */}
+        {/* 임시저장 + 생성 버튼 */}
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button
-            className="nb-gen"
-            style={{ ...s.genBtn, marginTop: 0, flex: 1, background: "#00e599", color: "#000000", opacity: loading ? 0.6 : 1 }}
-            onClick={handleGenerate}
-            disabled={loading}
-          >
-            {loading ? "작성 중..." : "생성하기"}
-          </button>
           <button
             onClick={saveDraftToHistory}
             disabled={loading}
@@ -1197,6 +1189,14 @@ export default function NaverBlogApp() {
             }}
           >
             임시저장
+          </button>
+          <button
+            className="nb-gen"
+            style={{ ...s.genBtn, marginTop: 0, flex: 1, background: "#00e599", color: "#000000", opacity: loading ? 0.6 : 1 }}
+            onClick={handleGenerate}
+            disabled={loading}
+          >
+            {loading ? "작성 중..." : "생성하기"}
           </button>
         </div>
 
