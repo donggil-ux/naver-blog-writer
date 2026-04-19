@@ -653,11 +653,32 @@ export default function NaverBlogApp() {
       const userMsg = `가게: ${detail.name}\n주소: ${detail.address || ""}\n카테고리: ${detail.category || ""}\n이 매장의 메뉴와 가격을 최대한 많이(최대 20개) 알려줘.`;
       const text = await searchWithWeb(userMsg, system, 1500);
       if (reqId !== menuFetchReqRef.current) return; // stale 응답 무시
-      const menuList = (text || "")
+      let menuList = (text || "")
         .split("\n")
         .map(l => l.replace(/^[\s\-•*\d.)]+/, "").trim())
         .filter(l => /\d{2,3}[,.]?\d{3}\s*원/.test(l))
         .slice(0, 20);
+
+      // Google 검색으로 메뉴를 못 찾았으면 네이버 지도 fallback
+      if (menuList.length === 0) {
+        try {
+          const params = new URLSearchParams({
+            query: detail.name || "",
+            address: detail.address || "",
+          });
+          const r = await fetch(`/api/naver-menu?${params.toString()}`);
+          if (reqId !== menuFetchReqRef.current) return;
+          if (r.ok) {
+            const data = await r.json();
+            if (Array.isArray(data.menus) && data.menus.length > 0) {
+              menuList = data.menus.slice(0, 20);
+            }
+          }
+        } catch {
+          /* naver fallback 실패 무시 */
+        }
+      }
+
       if (menuList.length > 0) {
         setStoreInfo(prev => prev ? { ...prev, menus: menuList } : prev);
         // 자동 전체채움 금지 — 사용자가 원하는 메뉴만 토글로 선택하도록
