@@ -642,21 +642,22 @@ export default function NaverBlogApp() {
 
     try {
       const system = [
-        "너는 식당/카페 메뉴 리서처다. Google 검색으로 '가게 이름 + 주소'에 해당하는 실제 매장의 대표 메뉴와 가격을 찾아라.",
+        "너는 식당/카페 메뉴 리서처다. Google 검색으로 '가게 이름 + 주소'에 해당하는 실제 매장의 메뉴와 가격을 최대한 많이 찾아라.",
         "출력 규칙:",
         "- 한 줄에 하나씩, '메뉴명 가격원' 형식으로만 출력 (예: 아메리카노 4500원).",
-        "- 최대 8개. 머리말, 번호, 설명, 마크다운, 인용 없이 결과 라인만 출력.",
+        "- 대표 메뉴뿐 아니라 사이드·세트·음료·디저트까지 포함해 최대 20개까지 찾아서 나열.",
+        "- 머리말, 번호, 설명, 마크다운, 인용 없이 결과 라인만 출력.",
         "- 가격을 확실히 찾은 메뉴만 포함. 가격이 불분명하면 제외.",
         "- 동일/유사 메뉴 중복 금지.",
       ].join("\n");
-      const userMsg = `가게: ${detail.name}\n주소: ${detail.address || ""}\n카테고리: ${detail.category || ""}\n이 매장의 대표 메뉴와 가격을 알려줘.`;
-      const text = await searchWithWeb(userMsg, system, 600);
+      const userMsg = `가게: ${detail.name}\n주소: ${detail.address || ""}\n카테고리: ${detail.category || ""}\n이 매장의 메뉴와 가격을 최대한 많이(최대 20개) 알려줘.`;
+      const text = await searchWithWeb(userMsg, system, 1500);
       if (reqId !== menuFetchReqRef.current) return; // stale 응답 무시
       const menuList = (text || "")
         .split("\n")
         .map(l => l.replace(/^[\s\-•*\d.)]+/, "").trim())
         .filter(l => /\d{2,3}[,.]?\d{3}\s*원/.test(l))
-        .slice(0, 8);
+        .slice(0, 20);
       if (menuList.length > 0) {
         setStoreInfo(prev => prev ? { ...prev, menus: menuList } : prev);
         // 자동 전체채움 금지 — 사용자가 원하는 메뉴만 토글로 선택하도록
