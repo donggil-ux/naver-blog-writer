@@ -851,10 +851,8 @@ export default function NaverBlogApp() {
         input:focus,textarea:focus{outline:none;border-color:#007AFF!important;box-shadow:0 0 0 3px rgba(0,122,255,0.25)!important}
         button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(0,122,255,0.35)}
         input[type="date"]{min-height:46px;appearance:none;-webkit-appearance:none}
-        input[type="date"]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:0.5;padding:0}
-        input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
-        .theme-dark input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:0.7}
-        .theme-dark input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
+        input[type="date"]::-webkit-calendar-picker-indicator{display:none;-webkit-appearance:none;opacity:0}
+        input[type="date"]::-webkit-inner-spin-button,input[type="date"]::-webkit-clear-button{display:none;-webkit-appearance:none}
         input[type="date"]::-webkit-date-and-time-value{text-align:left}
         input[type="date"]::-webkit-datetime-edit{padding:0}
         input,textarea{font-size:16px;transition:border-color 0.2s,box-shadow 0.2s}
