@@ -419,6 +419,7 @@ export default function NaverBlogApp() {
   const [copied, setCopied]     = useState(false);
   const [htmlCopied, setHtmlCopied] = useState(false);
   const [storeInfo, setStoreInfo] = useState(null);
+  const [menusLoading, setMenusLoading] = useState(false);
   const lastMenuFetchedRef = useRef("");
   const menuFetchReqRef = useRef(0);
   const fileRef = useRef();
@@ -639,6 +640,7 @@ export default function NaverBlogApp() {
     // 빠르게 다른 매장을 연속 선택했을 때, 이전 매장의 (오래 걸리는) 메뉴 응답이
     // 나중에 도착해 현재 매장의 메뉴를 덮어쓰는 race 방지.
     const reqId = ++menuFetchReqRef.current;
+    setMenusLoading(true);
 
     try {
       const system = [
@@ -685,6 +687,9 @@ export default function NaverBlogApp() {
       }
     } catch {
       /* 메뉴 조회 실패해도 선택 정보는 유지 */
+    } finally {
+      // 스테일(= 더 새로운 선택이 이미 시작됨)이 아닐 때만 로딩 해제
+      if (reqId === menuFetchReqRef.current) setMenusLoading(false);
     }
   };
 
@@ -879,6 +884,8 @@ export default function NaverBlogApp() {
         input[type="date"]::-webkit-datetime-edit{padding:0}
         input,textarea{font-size:16px;transition:border-color 0.2s,box-shadow 0.2s}
         @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes nbSkeleton{0%{opacity:0.35}50%{opacity:0.75}100%{opacity:0.35}}
+        .nb-skeleton-pill{animation:nbSkeleton 1.2s ease-in-out infinite}
 
         /* 모바일 (≤480px) */
         @media (max-width:480px){
@@ -1009,11 +1016,25 @@ export default function NaverBlogApp() {
             />
           </div>
 
-          {storeInfo?.menus?.length > 0 && (
+          {(menusLoading || storeInfo?.menus?.length > 0) && (
             <div style={{ padding: "14px 16px", background: t.toggleBg, borderRadius: 8, marginBottom: 14, fontSize: 13, color: t.pageText }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>💡 블로그 추천 메뉴 (클릭해서 선택, 다중 선택 가능)</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>
+                {menusLoading ? "🔍 블로그 추천 메뉴 불러오는 중..." : "💡 블로그 추천 메뉴 (클릭해서 선택, 다중 선택 가능)"}
+              </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {storeInfo.menus.map((m, i) => {
+                {menusLoading && Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={`sk-${i}`}
+                    className="nb-skeleton-pill"
+                    style={{
+                      width: 80 + (i % 3) * 25,
+                      height: 28,
+                      borderRadius: 50,
+                      background: t.pageBorder,
+                    }}
+                  />
+                ))}
+                {!menusLoading && storeInfo?.menus?.map((m, i) => {
                   const items = menus.split(",").map(x => x.trim()).filter(Boolean);
                   const selected = items.includes(m);
                   const toggle = () => {
