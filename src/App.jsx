@@ -496,6 +496,8 @@ export default function NaverBlogApp() {
       content,
       isDraft: !!opts.isDraft,
       formData: { category, name, location, date, menus, target, memo, companion, myStyle },
+      keywords: Array.isArray(keywords) ? keywords : [],
+      storeInfo: storeInfo || null,
     };
     const updated = [entry, ...history].slice(0, 50);
     setHistory(updated);
@@ -538,9 +540,15 @@ export default function NaverBlogApp() {
     setMenus(d.menus || ""); setTarget(d.target || ""); setMemo(d.memo || "");
     setCompanion(d.companion || "");
     if (d.myStyle !== undefined) setMyStyle(d.myStyle);
-    setResult(null); setKeywords([]); setStoreInfo(null);
+    if (entry.isDraft) {
+      setResult(null); setKeywords([]); setStoreInfo(null);
+    } else {
+      setResult(entry.content || null);
+      setKeywords(Array.isArray(entry.keywords) ? entry.keywords : []);
+      setStoreInfo(entry.storeInfo || null);
+    }
     setHistoryDetail(null); setShowHistory(false);
-    showToast("폼 불러오기 완료");
+    showToast(entry.isDraft ? "이어서 작성 준비 완료" : "폼 불러오기 완료");
   };
 
   const reorderPhotos = (from, to) => {
