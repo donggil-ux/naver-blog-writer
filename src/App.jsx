@@ -237,6 +237,16 @@ const CATEGORIES = [
   { id: "daily",   emoji: "📅", label: "일상",     sub: "리뷰 · 데일리" },
 ];
 
+const COMPANIONS = [
+  { id: "alone",     emoji: "🙂",  label: "혼자" },
+  { id: "boyfriend", emoji: "💑",  label: "남자친구와" },
+  { id: "family",    emoji: "👨‍👩‍👧", label: "가족" },
+  { id: "sibling",   emoji: "👫",  label: "동생" },
+  { id: "friend",    emoji: "🧑‍🤝‍🧑", label: "친구" },
+  { id: "coworker",  emoji: "🧑‍💼", label: "회사동료" },
+  { id: "acquaint",  emoji: "👥",  label: "지인" },
+];
+
 const FIELD_CONFIG = {
   food:    { nameLabel: "가게 이름 *", namePH: "예: 고씨네 동해막국수 강릉", locLabel: "위치", dateLabel: "방문일", menusLabel: "주문 메뉴 & 가격", menusPH: "예: 비빔막국수 11,000원, 수육 18,000원", memoPH: "분위기, 맛, 서비스 기억나는 것\n예: 면이 쫄깃, 육수 깊음, 웨이팅 30분", showTarget: false },
   culture: { nameLabel: "전시/공연명 *", namePH: "예: 모네: 빛을 그리다", locLabel: "장소", dateLabel: "관람일", menusLabel: "티켓 가격", menusPH: "예: 성인 22,000원", memoPH: "관람 소감, 인상 깊었던 부분\n예: 몰입감 있는 미디어아트, 인생샷 명소", showTarget: true, targetLabel: "추천 대상", targetPH: "예: 데이트, 가족, 혼자" },
@@ -381,6 +391,7 @@ export default function NaverBlogApp() {
   const [menus, setMenus]       = useState("");
   const [target, setTarget]     = useState("");
   const [memo, setMemo]         = useState("");
+  const [companion, setCompanion] = useState("");
   const [myStyle, setMyStyle]   = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("nb-my-style");
@@ -425,11 +436,11 @@ export default function NaverBlogApp() {
   const draftSavedData = useRef(null);
 
   const saveDraft = useCallback(() => {
-    const draft = { category, name, location, date, menus, target, memo, myStyle, savedAt: new Date().toISOString() };
+    const draft = { category, name, location, date, menus, target, memo, companion, myStyle, savedAt: new Date().toISOString() };
     localStorage.setItem("blog_writer_draft", JSON.stringify(draft));
     const now = new Date();
     setDraftStatus(`임시저장 완료 · ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`);
-  }, [category, name, location, date, menus, target, memo, myStyle]);
+  }, [category, name, location, date, menus, target, memo, companion, myStyle]);
 
   // 디바운스 자동 저장
   useEffect(() => {
@@ -437,7 +448,7 @@ export default function NaverBlogApp() {
     if (draftTimer.current) clearTimeout(draftTimer.current);
     draftTimer.current = setTimeout(() => saveDraft(), 1500);
     return () => { if (draftTimer.current) clearTimeout(draftTimer.current); };
-  }, [category, name, location, date, menus, target, memo, saveDraft]);
+  }, [category, name, location, date, menus, target, memo, companion, saveDraft]);
 
   // 페이지 진입 시 저장된 draft 확인
   useEffect(() => {
@@ -459,6 +470,7 @@ export default function NaverBlogApp() {
     setCategory(d.category || "food");
     setName(d.name || ""); setLocation(d.location || ""); setDate(d.date || "");
     setMenus(d.menus || ""); setTarget(d.target || ""); setMemo(d.memo || "");
+    setCompanion(d.companion || "");
     if (d.myStyle !== undefined) setMyStyle(d.myStyle);
     setShowDraftBanner(false);
   };
@@ -482,7 +494,7 @@ export default function NaverBlogApp() {
       category,
       title: name,
       content,
-      formData: { category, name, location, date, menus, target, memo, myStyle },
+      formData: { category, name, location, date, menus, target, memo, companion, myStyle },
     };
     const updated = [entry, ...history].slice(0, 50);
     setHistory(updated);
@@ -514,6 +526,7 @@ export default function NaverBlogApp() {
     setCategory(d.category || "food");
     setName(d.name || ""); setLocation(d.location || ""); setDate(d.date || "");
     setMenus(d.menus || ""); setTarget(d.target || ""); setMemo(d.memo || "");
+    setCompanion(d.companion || "");
     if (d.myStyle !== undefined) setMyStyle(d.myStyle);
     setResult(null); setKeywords([]); setStoreInfo(null);
     setHistoryDetail(null); setShowHistory(false);
@@ -553,7 +566,7 @@ export default function NaverBlogApp() {
   };
 
   const resetForm = (cat) => {
-    setCategory(cat); setName(""); setLocation(""); setDate(""); setMenus(""); setTarget(""); setMemo("");
+    setCategory(cat); setName(""); setLocation(""); setDate(""); setMenus(""); setTarget(""); setMemo(""); setCompanion("");
     setPhotos([]); setStoreInfo(null); setResult(null); setKeywords([]);
     lastMenuFetchedRef.current = "";
   };
@@ -673,10 +686,12 @@ export default function NaverBlogApp() {
   const buildUserMsg = (kws) => {
     const photoInfo = photos.length > 0 ? photos.map((p, i) => `사진${i+1}(${p.name})`).join(", ") : "사진 없음";
     const kwLine = kws && kws.length ? kws.join(", ") : "SEO에 맞게 자유롭게";
+    const companionLabel = COMPANIONS.find(c => c.id === companion)?.label || "";
+    const withLine = companionLabel ? `동행: ${companionLabel}\n` : "";
     return {
-      food:    `가게명: ${name}\n위치: ${location||"미입력"}\n방문일: ${date||"최근"}\n영업시간: ${storeInfo?.hours || "미입력"}\n휴무/브레이크: ${[storeInfo?.closed, storeInfo?.breakTime].filter(Boolean).join(" / ") || "없음"}\n메뉴: ${menus||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
-      culture: `전시/공연명: ${name}\n장소: ${location||"미입력"}\n관람일: ${date||"최근"}\n운영시간: ${storeInfo?.hours || "미입력"}\n휴무: ${storeInfo?.closed || "없음"}\n티켓가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
-      daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n운영시간: ${storeInfo?.hours || "미입력"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      food:    `가게명: ${name}\n위치: ${location||"미입력"}\n방문일: ${date||"최근"}\n${withLine}영업시간: ${storeInfo?.hours || "미입력"}\n휴무/브레이크: ${[storeInfo?.closed, storeInfo?.breakTime].filter(Boolean).join(" / ") || "없음"}\n메뉴: ${menus||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      culture: `전시/공연명: ${name}\n장소: ${location||"미입력"}\n관람일: ${date||"최근"}\n${withLine}운영시간: ${storeInfo?.hours || "미입력"}\n휴무: ${storeInfo?.closed || "없음"}\n티켓가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n${withLine}운영시간: ${storeInfo?.hours || "미입력"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
     }[category];
   };
 
@@ -1011,6 +1026,45 @@ export default function NaverBlogApp() {
               <input style={s.input} placeholder={fc.targetPH} value={target} onChange={e => setTarget(e.target.value)} />
             </div>
           )}
+        </div>
+
+        {/* 누구랑 갔는지 */}
+        <div style={s.card} className="nb-card">
+          <div className="nb-sec-title" style={s.secTitle}>👥 누구랑</div>
+          <div style={{ fontSize: 13, color: t.pageMuted, marginBottom: 12, fontWeight: 340, letterSpacing: "-0.14px" }}>함께한 사람을 선택하면 본문에 자연스럽게 녹여드려요</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {COMPANIONS.map(c => {
+              const active = companion === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCompanion(active ? "" : c.id)}
+                  aria-pressed={active}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 9999,
+                    border: active ? `1.5px solid ${t.pageText}` : `1px solid ${t.pageBorder}`,
+                    background: active ? t.pageText : t.cardBg,
+                    color: active ? t.pageBg : t.pageText,
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 500,
+                    fontFamily: FF_SANS,
+                    letterSpacing: "-0.01em",
+                    cursor: "pointer",
+                    transition: "background 0.15s, border-color 0.15s, color 0.15s",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    minHeight: 36,
+                  }}
+                >
+                  <span aria-hidden>{c.emoji}</span>
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 메모 */}
