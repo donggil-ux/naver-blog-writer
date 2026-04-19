@@ -487,18 +487,28 @@ export default function NaverBlogApp() {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2000); };
 
-  const saveHistory = (content) => {
+  const saveHistory = (content, opts = {}) => {
     const entry = {
       id: Date.now(),
       createdAt: new Date().toISOString(),
       category,
-      title: name,
+      title: name || (opts.isDraft ? "제목 미입력" : ""),
       content,
+      isDraft: !!opts.isDraft,
       formData: { category, name, location, date, menus, target, memo, companion, myStyle },
     };
     const updated = [entry, ...history].slice(0, 50);
     setHistory(updated);
     localStorage.setItem("blog_writer_history", JSON.stringify(updated));
+  };
+
+  const saveDraftToHistory = () => {
+    if (!name && !memo && !menus && !location) {
+      showToast("저장할 내용이 없어요");
+      return;
+    }
+    saveHistory("", { isDraft: true });
+    showToast("임시저장 완료");
   };
 
   const deleteHistory = (id) => {
@@ -1149,10 +1159,38 @@ export default function NaverBlogApp() {
           )}
         </div>
 
-        {/* 생성 버튼 — CTA 초록색 (gradient 팔레트의 electric green) */}
-        <button className="nb-gen" style={{ ...s.genBtn, background: "#00e599", color: "#000000", opacity: loading ? 0.6 : 1 }} onClick={handleGenerate} disabled={loading}>
-          {loading ? "작성 중..." : `${cat.label} 포스팅 생성하기`}
-        </button>
+        {/* 생성 + 임시저장 버튼 */}
+        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+          <button
+            className="nb-gen"
+            style={{ ...s.genBtn, marginTop: 0, flex: 1, background: "#00e599", color: "#000000", opacity: loading ? 0.6 : 1 }}
+            onClick={handleGenerate}
+            disabled={loading}
+          >
+            {loading ? "작성 중..." : "생성하기"}
+          </button>
+          <button
+            onClick={saveDraftToHistory}
+            disabled={loading}
+            aria-label="임시저장"
+            style={{
+              padding: "16px 20px",
+              borderRadius: 9999,
+              background: t.cardBg,
+              color: t.pageText,
+              fontSize: 15,
+              fontWeight: 500,
+              border: `1px solid ${t.pageBorder}`,
+              cursor: loading ? "not-allowed" : "pointer",
+              fontFamily: FF_SANS,
+              letterSpacing: "-0.01em",
+              opacity: loading ? 0.5 : 1,
+              whiteSpace: "nowrap",
+            }}
+          >
+            임시저장
+          </button>
+        </div>
 
         {loading && <Spinner step={loadingStep} theme={t} />}
 
@@ -1218,7 +1256,10 @@ export default function NaverBlogApp() {
                   const catObj = CATEGORIES.find(c => c.id === h.category);
                   const dt = new Date(h.createdAt);
                   const dateStr = `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`;
-                  const preview = (h.content || "").replace(/\n/g, " ").slice(0, 80);
+                  const previewSource = h.isDraft
+                    ? [h.formData?.menus, h.formData?.memo].filter(Boolean).join(" · ")
+                    : (h.content || "");
+                  const preview = previewSource.replace(/\n/g, " ").slice(0, 80) || (h.isDraft ? "임시저장된 폼 데이터" : "");
                   return (
                     <button key={h.id} onClick={() => setHistoryDetail(h)} style={{
                       background: t.toggleBg, border: `1px solid ${t.pageBorder}`, borderRadius: 12,
@@ -1227,6 +1268,9 @@ export default function NaverBlogApp() {
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 600, background: COLORS.accent, color: "#fff", padding: "2px 8px", borderRadius: 6 }}>{catObj?.emoji} {catObj?.label || h.category}</span>
+                        {h.isDraft && (
+                          <span style={{ fontSize: 11, fontWeight: 600, background: "#FEF3C7", color: "#92400E", padding: "2px 8px", borderRadius: 6 }}>임시저장</span>
+                        )}
                         <span style={{ fontSize: 11, color: t.pageMuted }}>{dateStr}</span>
                       </div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: t.pageText, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.title}</div>
@@ -1252,7 +1296,12 @@ export default function NaverBlogApp() {
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: t.pageText, marginBottom: 4 }}>{historyDetail.title}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: t.pageText }}>{historyDetail.title}</div>
+                  {historyDetail.isDraft && (
+                    <span style={{ fontSize: 11, fontWeight: 600, background: "#FEF3C7", color: "#92400E", padding: "2px 8px", borderRadius: 6 }}>임시저장</span>
+                  )}
+                </div>
                 <div style={{ fontSize: 12, color: t.pageMuted }}>
                   {(() => { const dt = new Date(historyDetail.createdAt); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:${String(dt.getMinutes()).padStart(2,"0")}`; })()}
                 </div>
@@ -1262,18 +1311,47 @@ export default function NaverBlogApp() {
                 color: t.pageText, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}>✕</button>
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word", color: t.pageText, marginBottom: 24, maxHeight: "50vh", overflowY: "auto", padding: 16, background: t.toggleBg, borderRadius: 12 }}>
-              {historyDetail.content}
-            </div>
+            {historyDetail.isDraft ? (
+              <div style={{ fontSize: 13, lineHeight: 1.8, color: t.pageText, marginBottom: 24, padding: 16, background: t.toggleBg, borderRadius: 12 }}>
+                {(() => {
+                  const d = historyDetail.formData || {};
+                  const companionLabel = COMPANIONS.find(c => c.id === d.companion)?.label || "";
+                  const rows = [
+                    ["위치/장소", d.location],
+                    ["날짜", d.date],
+                    ["메뉴/가격", d.menus],
+                    ["추천 대상", d.target],
+                    ["누구랑", companionLabel],
+                    ["메모", d.memo],
+                  ].filter(([, v]) => v);
+                  if (!rows.length) return <div style={{ color: t.pageMuted }}>저장된 폼 데이터가 없어요</div>;
+                  return rows.map(([k, v]) => (
+                    <div key={k} style={{ marginBottom: 8 }}>
+                      <span style={{ color: t.pageMuted, fontSize: 12, fontWeight: 500, marginRight: 8 }}>{k}</span>
+                      <span style={{ whiteSpace: "pre-wrap" }}>{v}</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            ) : (
+              <div style={{ fontSize: 14, lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word", color: t.pageText, marginBottom: 24, maxHeight: "50vh", overflowY: "auto", padding: 16, background: t.toggleBg, borderRadius: 12 }}>
+                {historyDetail.content}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={() => { navigator.clipboard.writeText(historyDetail.content); showToast("복사됨!"); }} style={{
-                flex: 1, padding: "12px 16px", borderRadius: 12, background: COLORS.accent, color: "#fff",
-                border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer",
-              }}>복사하기</button>
+              {!historyDetail.isDraft && (
+                <button onClick={() => { navigator.clipboard.writeText(historyDetail.content); showToast("복사됨!"); }} style={{
+                  flex: 1, padding: "12px 16px", borderRadius: 12, background: COLORS.accent, color: "#fff",
+                  border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer",
+                }}>복사하기</button>
+              )}
               <button onClick={() => restoreFromHistory(historyDetail)} style={{
-                flex: 1, padding: "12px 16px", borderRadius: 12, background: t.toggleBg, color: t.pageText,
-                border: `1px solid ${t.pageBorder}`, fontSize: 14, fontWeight: 600, cursor: "pointer",
-              }}>폼 불러오기</button>
+                flex: 1, padding: "12px 16px", borderRadius: 12,
+                background: historyDetail.isDraft ? COLORS.accent : t.toggleBg,
+                color: historyDetail.isDraft ? "#fff" : t.pageText,
+                border: historyDetail.isDraft ? "none" : `1px solid ${t.pageBorder}`,
+                fontSize: 14, fontWeight: 600, cursor: "pointer",
+              }}>{historyDetail.isDraft ? "이어서 작성" : "폼 불러오기"}</button>
               <button onClick={() => deleteHistory(historyDetail.id)} style={{
                 padding: "12px 16px", borderRadius: 12, background: "transparent", color: "#EF4444",
                 border: "1px solid #EF4444", fontSize: 14, fontWeight: 600, cursor: "pointer",
