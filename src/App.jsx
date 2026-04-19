@@ -66,12 +66,15 @@ const DEFAULT_MY_STYLE = `앞으로 내 블로그 포스팅 초안을 작성하�
 - "내돈내산이며 제 개인적인 입맛에 맞춰 리뷰합니다"와 같은 솔직하고 진정성 있는 멘트를 곁들일 것.`;
 
 // Apple-inspired 디자인 시스템
+const PRIMARY = "#FFE066";          // 연노랑 프라이머리
+const PRIMARY_HOVER = "#FFD43B";    // 살짝 진한 노랑 (호버/셰도)
+const PRIMARY_TEXT = "#1F1F1F";     // 노랑 위 텍스트 (검정 대비)
 const COLORS = {
   bg: "#ffffff",
   card: "#ffffff",
-  accent: "#007AFF",
-  accentLight: "rgba(0,122,255,0.08)",
-  accentMid: "rgba(0,122,255,0.40)",
+  accent: PRIMARY,
+  accentLight: "rgba(255,224,102,0.18)",
+  accentMid: "rgba(255,224,102,0.55)",
   text: "#1d1d1f",
   muted: "#86868b",
   border: "#d2d2d7",
@@ -79,7 +82,7 @@ const COLORS = {
   surfaceDark: "#1c1c1e",
   cardDark: "#2c2c2e",
 };
-const GRADIENT = "linear-gradient(135deg,#00e599 0%,#34d399 50%,#10b981 100%)";
+const GRADIENT = "linear-gradient(135deg,#FFE066 0%,#FFD43B 50%,#FAB005 100%)";
 const FF_SANS = "-apple-system,BlinkMacSystemFont,'SF Pro Display','Pretendard Variable','Pretendard',system-ui,sans-serif";
 const FF_MONO = "'SF Mono','Menlo','Consolas',monospace";
 
@@ -113,7 +116,7 @@ const THEMES = {
     receiptText: "#374151",
     toggleBg: "#E5E7EB",
     logoBg: COLORS.accent,
-    logoText: "#ffffff",
+    logoText: PRIMARY_TEXT,
     focusOutline: COLORS.accent,
   },
   dark: {
@@ -140,7 +143,7 @@ const THEMES = {
     receiptText: "#F9FAFB",
     toggleBg: "#374151",
     logoBg: COLORS.accent,
-    logoText: "#ffffff",
+    logoText: PRIMARY_TEXT,
     focusOutline: COLORS.accent,
   },
 };
@@ -338,7 +341,7 @@ const s = {
   app: { minHeight: "100vh", background: COLORS.surfaceLight, fontFamily: FF_SANS, color: COLORS.text, WebkitFontSmoothing: "antialiased", MozOsxFontSmoothing: "grayscale", letterSpacing: "-0.01em" },
   header: { background: "rgba(255,255,255,0.72)", backdropFilter: "saturate(180%) blur(20px)", WebkitBackdropFilter: "saturate(180%) blur(20px)", borderBottom: `0.5px solid ${COLORS.border}`, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10 },
   headerLeft: { display: "flex", alignItems: "center", gap: 12 },
-  logo: { width: 34, height: 34, background: COLORS.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#ffffff", fontSize: 15, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: FF_SANS },
+  logo: { width: 34, height: 34, background: COLORS.accent, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: PRIMARY_TEXT, fontSize: 15, fontWeight: 700, letterSpacing: "-0.5px", fontFamily: FF_SANS },
   body: { maxWidth: 680, margin: "0 auto", padding: "36px 20px 120px" },
   card: { background: COLORS.bg, borderRadius: 16, padding: 24, marginBottom: 12, border: "none", boxShadow: SHADOW_SM },
   secTitle: { fontFamily: FF_SANS, fontSize: 20, fontWeight: 700, color: COLORS.text, marginBottom: 20, display: "flex", alignItems: "center", gap: 8, letterSpacing: "-0.02em", lineHeight: 1.3 },
@@ -347,9 +350,9 @@ const s = {
   textarea: { width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${COLORS.border}`, fontSize: 16, color: COLORS.text, background: COLORS.surfaceLight, outline: "none", resize: "vertical", minHeight: 100, boxSizing: "border-box", lineHeight: 1.55, fontFamily: FF_SANS, fontWeight: 400, letterSpacing: "-0.01em", transition: "border-color 0.2s, box-shadow 0.2s" },
   row: { display: "flex", gap: 12, marginBottom: 14 },
   col: { flex: 1 },
-  genBtn: { width: "100%", padding: "16px 28px", borderRadius: 9999, background: "#00e599", color: "#000000", fontSize: 17, fontWeight: 600, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.02em", boxShadow: "0 2px 8px rgba(0,229,153,0.25)", transition: "transform 0.15s, box-shadow 0.15s" },
+  genBtn: { width: "100%", padding: "16px 28px", borderRadius: 9999, background: PRIMARY, color: PRIMARY_TEXT, fontSize: 17, fontWeight: 600, border: "none", cursor: "pointer", marginTop: 16, fontFamily: FF_SANS, letterSpacing: "-0.02em", boxShadow: "0 2px 8px rgba(255,212,59,0.45)", transition: "transform 0.15s, box-shadow 0.15s" },
   copyBtn: { padding: "8px 16px", borderRadius: 20, background: COLORS.surfaceLight, color: COLORS.text, fontSize: 13, fontWeight: 500, border: `1px solid ${COLORS.border}`, cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em", transition: "background 0.15s" },
-  copyBtnDark: { padding: "8px 16px", borderRadius: 20, background: COLORS.accent, color: "#ffffff", fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em" },
+  copyBtnDark: { padding: "8px 16px", borderRadius: 20, background: COLORS.accent, color: PRIMARY_TEXT, fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.01em" },
   kwTag: { padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500, fontFamily: FF_SANS, letterSpacing: "-0.01em" },
   photoThumb: { width: 80, height: 80, borderRadius: 12, objectFit: "cover", border: "none", boxShadow: SHADOW_SM },
   addPhoto: { width: 80, height: 80, borderRadius: 12, border: `1.5px dashed ${COLORS.border}`, background: COLORS.surfaceLight, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.muted, fontSize: 11, gap: 3, fontFamily: FF_SANS, fontWeight: 500, transition: "background 0.15s" },
@@ -360,7 +363,7 @@ function Spinner({ step, theme }) {
   const pm = theme?.pageMuted || "#86868b";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", gap: 14, color: pm, fontSize: 14, fontFamily: FF_SANS }}>
-      <div style={{ width: 28, height: 28, border: `3px solid rgba(0,122,255,0.2)`, borderTop: `3px solid #007AFF`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ width: 28, height: 28, border: `3px solid rgba(255,224,102,0.35)`, borderTop: `3px solid #FFD43B`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <div style={{ textAlign: "center" }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: pt, marginBottom: 4, letterSpacing: "-0.01em" }}>{step}</div>
         <div style={{ fontWeight: 400 }}>잠시만 기다려주세요</div>
@@ -875,8 +878,8 @@ export default function NaverBlogApp() {
         button{-webkit-tap-highlight-color:transparent;cursor:pointer;transition:transform 0.12s,opacity 0.12s}
         button:active{transform:scale(0.97)}
         /* Apple-style focus ring */
-        input:focus,textarea:focus{outline:none;border-color:#007AFF!important;box-shadow:0 0 0 3px rgba(0,122,255,0.25)!important}
-        button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(0,122,255,0.35)}
+        input:focus,textarea:focus{outline:none;border-color:#FFD43B!important;box-shadow:0 0 0 3px rgba(255,212,59,0.45)!important}
+        button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(255,212,59,0.55)}
         input[type="date"]{min-height:46px;appearance:none;-webkit-appearance:none}
         input[type="date"]::-webkit-calendar-picker-indicator{display:none;-webkit-appearance:none;opacity:0}
         input[type="date"]::-webkit-inner-spin-button,input[type="date"]::-webkit-clear-button{display:none;-webkit-appearance:none}
@@ -928,7 +931,7 @@ export default function NaverBlogApp() {
         /* 다크 모드 — 카드/인풋 */
         .theme-dark .nb-card{background:#1F2937!important;border:1px solid #374151!important;box-shadow:0 2px 10px rgba(0,0,0,0.3)!important}
         .theme-dark input,.theme-dark textarea{background:#1F2937!important;border-color:#374151!important;color:#F3F4F6!important}
-        .theme-dark input:focus,.theme-dark textarea:focus{border-color:#007AFF!important;box-shadow:0 0 0 3px rgba(0,122,255,0.3)!important}
+        .theme-dark input:focus,.theme-dark textarea:focus{border-color:#FFD43B!important;box-shadow:0 0 0 3px rgba(255,212,59,0.45)!important}
         .theme-dark ::placeholder{color:#6B7280!important}
         .theme-dark .nb-sec-title{color:#F9FAFB!important}
         .theme-dark .nb-card-result{background:#1F2937!important;border-color:#374151!important}
@@ -951,7 +954,7 @@ export default function NaverBlogApp() {
             position: "relative",
           }}>
             📋
-            {history.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: COLORS.accent, color: "#fff", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{history.length}</span>}
+            {history.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: COLORS.accent, color: PRIMARY_TEXT, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{history.length}</span>}
           </button>
           <button onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? "라이트 모드" : "다크 모드"} style={{
             width: 34, height: 34, borderRadius: 10,
@@ -968,7 +971,7 @@ export default function NaverBlogApp() {
           <div style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 14, padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, boxShadow: SHADOW_SM }}>
             <div style={{ fontSize: 14, fontWeight: 500, color: t.pageText }}>작성 중이던 내용이 있어요. 이어서 작성할까요?</div>
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              <button onClick={restoreDraft} style={{ padding: "8px 16px", borderRadius: 10, background: COLORS.accent, color: "#fff", border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>불러오기</button>
+              <button onClick={restoreDraft} style={{ padding: "8px 16px", borderRadius: 10, background: COLORS.accent, color: PRIMARY_TEXT, border: "none", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>불러오기</button>
               <button onClick={dismissDraft} style={{ padding: "8px 16px", borderRadius: 10, background: t.toggleBg, color: t.pageText, border: `1px solid ${t.pageBorder}`, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>새로 작성</button>
             </div>
           </div>
@@ -1049,9 +1052,9 @@ export default function NaverBlogApp() {
                   return (
                     <button key={i} onClick={toggle} aria-pressed={selected} style={{
                       padding: "6px 14px 8px", borderRadius: 50,
-                      background: selected ? "#00e599" : t.cardBg,
-                      border: `1px solid ${selected ? "#00e599" : t.pageBorder}`,
-                      color: selected ? "#000" : t.pageText,
+                      background: selected ? PRIMARY : t.cardBg,
+                      border: `1px solid ${selected ? PRIMARY : t.pageBorder}`,
+                      color: selected ? PRIMARY_TEXT : t.pageText,
                       fontSize: 12, fontWeight: selected ? 600 : 480,
                       cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.1px",
                       transition: "background 0.15s, color 0.15s, border-color 0.15s",
@@ -1249,7 +1252,7 @@ export default function NaverBlogApp() {
           </button>
           <button
             className="nb-gen"
-            style={{ ...s.genBtn, marginTop: 0, flex: 1, background: "#00e599", color: "#000000", opacity: loading ? 0.6 : 1 }}
+            style={{ ...s.genBtn, marginTop: 0, flex: 1, background: PRIMARY, color: PRIMARY_TEXT, opacity: loading ? 0.6 : 1 }}
             onClick={handleGenerate}
             disabled={loading}
           >
@@ -1281,7 +1284,7 @@ export default function NaverBlogApp() {
                   <button style={{ padding: "8px 16px", borderRadius: 20, background: t.toggleBg, color: t.pageText, fontSize: 13, fontWeight: 500, border: `1px solid ${t.pageBorder}`, cursor: "pointer", fontFamily: FF_SANS }} onClick={() => { navigator.clipboard.writeText(result); setCopied(true); setTimeout(() => setCopied(false), 2000); }}>
                     {copied ? "✓ 복사됨" : "텍스트 복사"}
                   </button>
-                  <button style={{ padding: "8px 16px", borderRadius: 20, background: COLORS.accent, color: "#ffffff", fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: FF_SANS }} onClick={copyHTML}>
+                  <button style={{ padding: "8px 16px", borderRadius: 20, background: COLORS.accent, color: PRIMARY_TEXT, fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer", fontFamily: FF_SANS }} onClick={copyHTML}>
                     {htmlCopied ? "✓ 복사됨" : "HTML 복사"}
                   </button>
                 </div>
@@ -1332,7 +1335,7 @@ export default function NaverBlogApp() {
                       display: "flex", flexDirection: "column", gap: 6, width: "100%",
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, background: COLORS.accent, color: "#fff", padding: "2px 8px", borderRadius: 6 }}>{catObj?.emoji} {catObj?.label || h.category}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, background: COLORS.accent, color: PRIMARY_TEXT, padding: "2px 8px", borderRadius: 6 }}>{catObj?.emoji} {catObj?.label || h.category}</span>
                         {h.isDraft && (
                           <span style={{ fontSize: 11, fontWeight: 600, background: "#FEF3C7", color: "#92400E", padding: "2px 8px", borderRadius: 6 }}>임시저장</span>
                         )}
@@ -1406,7 +1409,7 @@ export default function NaverBlogApp() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {!historyDetail.isDraft && (
                 <button onClick={() => { navigator.clipboard.writeText(historyDetail.content); showToast("복사됨!"); }} style={{
-                  flex: 1, padding: "12px 16px", borderRadius: 12, background: COLORS.accent, color: "#fff",
+                  flex: 1, padding: "12px 16px", borderRadius: 12, background: COLORS.accent, color: PRIMARY_TEXT,
                   border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer",
                 }}>복사하기</button>
               )}
@@ -1429,9 +1432,9 @@ export default function NaverBlogApp() {
       {/* ── FAB (모바일 전용) ── */}
       <button className="nb-fab" onClick={() => setShowHistory(true)} aria-label="생성 내역" style={{
         position: "fixed", bottom: 24, right: 20, width: 52, height: 52, borderRadius: 16,
-        background: COLORS.accent, color: "#fff", border: "none", cursor: "pointer",
+        background: COLORS.accent, color: PRIMARY_TEXT, border: "none", cursor: "pointer",
         fontSize: 20, zIndex: 90,
-        boxShadow: "0 4px 16px rgba(0,122,255,0.35)",
+        boxShadow: "0 4px 16px rgba(255,212,59,0.55)",
       }}>
         📋
         {history.length > 0 && <span style={{ position: "absolute", top: -4, right: -4, width: 20, height: 20, borderRadius: "50%", background: "#EF4444", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{history.length}</span>}
