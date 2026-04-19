@@ -659,7 +659,7 @@ export default function NaverBlogApp() {
         .slice(0, 8);
       if (menuList.length > 0) {
         setStoreInfo(prev => prev ? { ...prev, menus: menuList } : prev);
-        if (!menus) setMenus(menuList.join(", "));
+        // 자동 전체채움 금지 — 사용자가 원하는 메뉴만 토글로 선택하도록
       }
     } catch {
       /* 메뉴 조회 실패해도 선택 정보는 유지 */
@@ -989,16 +989,32 @@ export default function NaverBlogApp() {
 
           {storeInfo?.menus?.length > 0 && (
             <div style={{ padding: "14px 16px", background: t.toggleBg, borderRadius: 8, marginBottom: 14, fontSize: 13, color: t.pageText }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>💡 블로그 추천 메뉴 (클릭 시 자동 입력)</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: t.pageMuted, marginBottom: 8 }}>💡 블로그 추천 메뉴 (클릭해서 선택, 다중 선택 가능)</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {storeInfo.menus.map((m, i) => (
-                  <button key={i} onClick={() => setMenus(m)} style={{
-                    padding: "6px 14px 8px", borderRadius: 50,
-                    background: t.cardBg, border: `1px solid ${t.pageBorder}`,
-                    color: t.pageText, fontSize: 12, fontWeight: 480,
-                    cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.1px",
-                  }}>{m}</button>
-                ))}
+                {storeInfo.menus.map((m, i) => {
+                  const items = menus.split(",").map(x => x.trim()).filter(Boolean);
+                  const selected = items.includes(m);
+                  const toggle = () => {
+                    if (selected) {
+                      const next = items.filter(x => x !== m).join(", ");
+                      setMenus(next);
+                    } else {
+                      const next = items.length ? `${items.join(", ")}, ${m}` : m;
+                      setMenus(next);
+                    }
+                  };
+                  return (
+                    <button key={i} onClick={toggle} aria-pressed={selected} style={{
+                      padding: "6px 14px 8px", borderRadius: 50,
+                      background: selected ? "#00e599" : t.cardBg,
+                      border: `1px solid ${selected ? "#00e599" : t.pageBorder}`,
+                      color: selected ? "#000" : t.pageText,
+                      fontSize: 12, fontWeight: selected ? 600 : 480,
+                      cursor: "pointer", fontFamily: FF_SANS, letterSpacing: "-0.1px",
+                      transition: "background 0.15s, color 0.15s, border-color 0.15s",
+                    }}>{selected ? "✓ " : ""}{m}</button>
+                  );
+                })}
               </div>
             </div>
           )}
