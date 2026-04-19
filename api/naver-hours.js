@@ -33,15 +33,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "query parameter is required" });
   }
 
+  // 비공식 엔드포인트 → 응답 지연 시 최대 8초 컷
+  const TIMEOUT_MS = 8000;
+
   try {
     // Step 1: Naver Map internal search → get place ID
     const q = `${query} ${address || ""}`.trim();
     const searchRes = await fetch(
       `https://map.naver.com/v5/api/search?caller=pcweb&query=${encodeURIComponent(q)}&type=all&page=1&count=1&isPlaceRecommendation=true&lang=ko`,
-      { headers: HEADERS }
+      { headers: HEADERS, signal: AbortSignal.timeout(TIMEOUT_MS) }
     );
 
     if (!searchRes.ok) {
+      res.setHeader("Cache-Control", "no-store");
       return res.status(200).json({ hours: "", closed: "", breakTime: "", matched: false });
     }
 
@@ -49,16 +53,18 @@ export default async function handler(req, res) {
     const place = searchData.result?.place?.list?.[0];
 
     if (!place?.id) {
+      res.setHeader("Cache-Control", "no-store");
       return res.status(200).json({ hours: "", closed: "", breakTime: "", matched: false });
     }
 
     // Step 2: Place summary → business hours
     const detailRes = await fetch(
       `https://map.naver.com/v5/api/sites/summary/${place.id}?lang=ko`,
-      { headers: HEADERS }
+      { headers: HEADERS, signal: AbortSignal.timeout(TIMEOUT_MS) }
     );
 
     if (!detailRes.ok) {
+      res.setHeader("Cache-Control", "no-store");
       return res.status(200).json({ hours: "", closed: "", breakTime: "", matched: false });
     }
 
@@ -110,6 +116,11 @@ export default async function handler(req, res) {
       formattedAddress: place.roadAddress || "",
     });
   } catch (err) {
-    return res.status(500).json({ error: err?.message || "Naver hours request failed" });
+    // 타임아웃·네트워크 오류 등 — 내부 메시지 노출하지 않고 fallback 유도
+    res.setHeader("Cache-Control", "no-store");
+    if (err?.name === "AbortError" || err?.name === "TimeoutError") {
+      return res.status(200).json({ hours: "", closed: "", breakTime: "", matched: false });
+    }
+    return res.status(500).json({ error: "Naver hours request failed" });
   }
 }

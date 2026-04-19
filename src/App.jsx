@@ -208,15 +208,11 @@ const toNaverHTML = (text) => {
       out.push(renderTable(tbl));
       continue;
     }
+    // 번호 항목(1. 2. 3.)은 '[추천 제목 3가지]' 섹션에도 쓰이므로 <ol>로 묶지 않고
+    // 기존 동작 유지: 각 줄을 단순 <p>로 출력.
     if (/^\d+\.\s/.test(trimmed)) {
-      const items = [];
-      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
-        items.push(lines[i].trim().replace(/^\d+\.\s+/, ""));
-        i++;
-      }
-      const li = items.map(t => `<li style="margin:4px 0;line-height:1.8;">${inlineFormat(t)}</li>`).join("");
-      out.push(`<ol style="margin:12px 0 16px;padding-left:22px;font-size:15px;">${li}</ol>`);
-      continue;
+      out.push(`<p style="line-height:1.85;margin:0 0 6px;">${inlineFormat(trimmed)}</p>`);
+      i++; continue;
     }
     if (trimmed.startsWith("#")) {
       out.push(`<p style="line-height:1.85;margin:10px 0;color:#2d6a4f;font-weight:600;">${escapeHTML(trimmed)}</p>`);
