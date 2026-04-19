@@ -409,6 +409,7 @@ export default function NaverBlogApp() {
   const [htmlCopied, setHtmlCopied] = useState(false);
   const [storeInfo, setStoreInfo] = useState(null);
   const lastMenuFetchedRef = useRef("");
+  const menuFetchReqRef = useRef(0);
   const fileRef = useRef();
   const receiptRef = useRef();
   const [scanning, setScanning] = useState(false);
@@ -604,6 +605,10 @@ export default function NaverBlogApp() {
     if (!isNewSelection) return;
     lastMenuFetchedRef.current = detail.name;
 
+    // 빠르게 다른 매장을 연속 선택했을 때, 이전 매장의 (오래 걸리는) 메뉴 응답이
+    // 나중에 도착해 현재 매장의 메뉴를 덮어쓰는 race 방지.
+    const reqId = ++menuFetchReqRef.current;
+
     try {
       const system = [
         "너는 식당/카페 메뉴 리서처다. Google 검색으로 '가게 이름 + 주소'에 해당하는 실제 매장의 대표 메뉴와 가격을 찾아라.",
@@ -615,6 +620,7 @@ export default function NaverBlogApp() {
       ].join("\n");
       const userMsg = `가게: ${detail.name}\n주소: ${detail.address || ""}\n카테고리: ${detail.category || ""}\n이 매장의 대표 메뉴와 가격을 알려줘.`;
       const text = await searchWithWeb(userMsg, system, 600);
+      if (reqId !== menuFetchReqRef.current) return; // stale 응답 무시
       const menuList = (text || "")
         .split("\n")
         .map(l => l.replace(/^[\s\-•*\d.)]+/, "").trim())
