@@ -22,6 +22,7 @@ import { seoChecklist } from "./lib/seoRules.js";
 import { parseTagsFromContent, normalizeEntry } from "./lib/history.js";
 import { findRelated } from "./lib/related.js";
 import { loadGoal, nextTargetDay, dDay, weeklyPublishedCount } from "./lib/goal.js";
+import { encodeShare, decodeShare, buildShareUrl, stripImportParam, copyToClipboard } from "./lib/share.js";
 
 function SortablePhoto({ photo, index, onRemove, thumbStyle, COLORS, FF_MONO }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.url + index });
@@ -503,6 +504,18 @@ export default function NaverBlogApp() {
   const dismissDraft = () => { setShowDraftBanner(false); localStorage.removeItem("blog_writer_draft"); };
   const clearDraft = () => { localStorage.removeItem("blog_writer_draft"); setDraftStatus(""); };
 
+  // 공유 링크 (?import=...) 감지
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const enc = params.get("import");
+      if (!enc) return;
+      const payload = decodeShare(enc);
+      if (payload) setImportPayload(payload);
+      stripImportParam();
+    } catch {}
+  }, []);
+
   // ── 생성 내역 ──
   const [history, setHistory] = useState(() => {
     try {
@@ -514,15 +527,23 @@ export default function NaverBlogApp() {
   const [showHistory, setShowHistory] = useState(false);
   const [historyDetail, setHistoryDetail] = useState(null);
   const [toast, setToast] = useState("");
+  // 공유 링크 가져오기
+  const [importPayload, setImportPayload] = useState(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2000); };
 
   const saveHistory = (content, opts = {}) => {
+    // 확정 제목을 본문 상단에서 파싱 (없으면 name, 둘 다 없으면 "제목 미입력")
+    let parsedTitle = "";
+    if (!opts.isDraft && typeof content === "string") {
+      const m = content.match(/\[확정\s*제목\]\s*\n\s*([^\n]+)/);
+      if (m) parsedTitle = m[1].trim();
+    }
     const entry = {
       id: Date.now(),
       createdAt: new Date().toISOString(),
       category,
-      title: name || (opts.isDraft ? "제목 미입력" : ""),
+      title: opts.title || parsedTitle || name || (opts.isDraft ? "제목 미입력" : "제목 없음"),
       content,
       isDraft: !!opts.isDraft,
       formData: { category, name, location, date, menus, target, memo, companion, myStyle, mainKeyword, subKeywords },
@@ -552,6 +573,59 @@ export default function NaverBlogApp() {
     localStorage.setItem("blog_writer_history", JSON.stringify(updated));
     setHistoryDetail(null);
     showToast("삭제됨");
+  };
+
+  // 공유 링크 복사 — 생성 내역 entry
+  const shareHistoryEntry = async (entry) => {
+    const url = buildShareUrl({ kind: "history", entry });
+    if (!url) { showToast("링크 생성 실패"); return; }
+    if (url.length > 8000) {
+      showToast("본문이 너무 길어 링크 생성 실패");
+      return;
+    }
+    const ok = await copyToClipboard(url);
+    showToast(ok ? "공유 링크 복사됨" : "복사 실패");
+  };
+
+  // 공유 링크 복사 — 현재 임시저장 폼
+  const shareCurrentDraft = async () => {
+    const draft = { category, name, location, date, menus, target, memo, companion, myStyle, mainKeyword, subKeywords, savedAt: new Date().toISOString() };
+    if (!draft.name && !draft.memo && !draft.menus && !draft.mainKeyword) {
+      showToast("공유할 내용이 없어요");
+      return;
+    }
+    const url = buildShareUrl({ kind: "draft", draft });
+    if (!url) { showToast("링크 생성 실패"); return; }
+    const ok = await copyToClipboard(url);
+    showToast(ok ? "임시저장 링크 복사됨" : "복사 실패");
+  };
+
+  // 가져오기 확정
+  const confirmImport = () => {
+    if (!importPayload) return;
+    if (importPayload.kind === "draft" && importPayload.draft) {
+      const d = importPayload.draft;
+      setCategory(d.category || "food");
+      setName(d.name || ""); setLocation(d.location || ""); setDate(d.date || "");
+      setMenus(d.menus || ""); setTarget(d.target || ""); setMemo(d.memo || "");
+      setCompanion(d.companion || "");
+      if (d.myStyle !== undefined) setMyStyle(d.myStyle);
+      setMainKeyword(d.mainKeyword || "");
+      setSubKeywords(Array.isArray(d.subKeywords) ? d.subKeywords : []);
+      setView("writer");
+      setShowDraftBanner(false);
+      setImportPayload(null);
+      showToast("임시저장 불러옴");
+    } else if (importPayload.kind === "history" && importPayload.entry) {
+      const incoming = normalizeEntry({ ...importPayload.entry, id: Date.now() });
+      const updated = [incoming, ...history].slice(0, 50);
+      setHistory(updated);
+      localStorage.setItem("blog_writer_history", JSON.stringify(updated));
+      setImportPayload(null);
+      showToast("생성 내역에 추가됨");
+    } else {
+      setImportPayload(null);
+    }
   };
 
   // ESC 키로 패널/모달 닫기
@@ -1036,6 +1110,20 @@ export default function NaverBlogApp() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {draftStatus && <span className="nb-header-sub" style={{ fontSize: 11, color: t.pageMuted, fontWeight: 400 }}>{draftStatus}</span>}
+          {draftStatus && (
+            <button
+              type="button"
+              onClick={shareCurrentDraft}
+              title="다른 기기로 옮길 수 있는 임시저장 링크 복사"
+              className="nb-header-sub"
+              style={{
+                padding: "4px 10px", borderRadius: 8,
+                background: t.toggleBg, color: t.pageText,
+                border: `1px solid ${t.pageBorder}`, cursor: "pointer",
+                fontSize: 11, fontWeight: 600,
+              }}
+            >🔗 공유</button>
+          )}
           <HeaderMenu
             view={view}
             onChange={setView}
@@ -1706,6 +1794,10 @@ export default function NaverBlogApp() {
                 border: historyDetail.isDraft ? "none" : `1px solid ${t.pageBorder}`,
                 fontSize: 14, fontWeight: 600, cursor: "pointer",
               }}>{historyDetail.isDraft ? "이어서 작성" : "폼 불러오기"}</button>
+              <button onClick={() => shareHistoryEntry(historyDetail)} style={{
+                padding: "12px 16px", borderRadius: 12, background: "transparent", color: t.pageText,
+                border: `1px solid ${t.pageBorder}`, fontSize: 14, fontWeight: 600, cursor: "pointer",
+              }} title="다른 기기로 옮길 수 있는 링크를 복사합니다">🔗 링크</button>
               <button onClick={() => deleteHistory(historyDetail.id)} style={{
                 padding: "12px 16px", borderRadius: 12, background: "transparent", color: "#EF4444",
                 border: "1px solid #EF4444", fontSize: 14, fontWeight: 600, cursor: "pointer",
@@ -1725,6 +1817,55 @@ export default function NaverBlogApp() {
         📋
         {history.length > 0 && <span style={{ position: "absolute", top: -4, right: -4, width: 20, height: 20, borderRadius: "50%", background: "#EF4444", color: "#fff", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{history.length}</span>}
       </button>
+
+      {/* ── 공유 링크 가져오기 확인 모달 ── */}
+      {importPayload && (() => {
+        const isDraft = importPayload.kind === "draft";
+        const d = isDraft ? importPayload.draft : importPayload.entry?.formData || {};
+        const title = isDraft
+          ? (d.name || d.mainKeyword || "임시저장")
+          : (importPayload.entry?.title || "제목 없음");
+        const catObj = CATEGORIES.find(c => c.id === (isDraft ? d.category : importPayload.entry?.category));
+        const preview = isDraft
+          ? [d.menus, d.memo].filter(Boolean).join(" · ")
+          : (importPayload.entry?.content || "").replace(/\n/g, " ").slice(0, 120);
+        return (
+          <>
+            <div onClick={() => setImportPayload(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 210 }} />
+            <div style={{
+              position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+              width: "min(480px, 90vw)", maxHeight: "85vh", overflowY: "auto",
+              background: t.cardBg, borderRadius: 20, padding: 24, zIndex: 211,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: t.pageText, marginBottom: 4 }}>
+                🔗 공유 링크 가져오기
+              </div>
+              <div style={{ fontSize: 13, color: t.pageMuted, marginBottom: 16 }}>
+                {isDraft ? "다른 기기에서 작성 중이던 임시저장을 이어서 작성합니다." : "다른 기기에서 생성한 포스팅을 생성 내역에 추가합니다."}
+              </div>
+              <div style={{ background: t.toggleBg, borderRadius: 12, padding: 14, marginBottom: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {catObj && <span style={{ fontSize: 12, fontWeight: 600, background: COLORS.accent, color: PRIMARY_TEXT, padding: "2px 8px", borderRadius: 6 }}>{catObj.emoji} {catObj.label}</span>}
+                  <span style={{ fontSize: 11, fontWeight: 600, background: isDraft ? "#FEF3C7" : "#DBEAFE", color: isDraft ? "#92400E" : "#1E40AF", padding: "2px 8px", borderRadius: 6 }}>{isDraft ? "임시저장" : "생성 포스팅"}</span>
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: t.pageText }}>{title}</div>
+                {preview && <div style={{ fontSize: 12, color: t.pageMuted, lineHeight: 1.5 }}>{preview}</div>}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setImportPayload(null)} style={{
+                  flex: 1, padding: "12px 16px", borderRadius: 12, background: t.toggleBg, color: t.pageText,
+                  border: `1px solid ${t.pageBorder}`, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                }}>취소</button>
+                <button onClick={confirmImport} style={{
+                  flex: 2, padding: "12px 16px", borderRadius: 12, background: COLORS.accent, color: PRIMARY_TEXT,
+                  border: "none", fontSize: 14, fontWeight: 700, cursor: "pointer",
+                }}>{isDraft ? "이어서 작성" : "생성 내역에 추가"}</button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {/* ── 토스트 ── */}
       {toast && (
