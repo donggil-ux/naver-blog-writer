@@ -1075,7 +1075,7 @@ export default function NaverBlogApp() {
           if (tgt.date == null) return null;
           return (
             <div style={{
-              padding: "10px 16px",
+              padding: "16px 16px",
               background: "linear-gradient(135deg, #E53935 0%, #C62828 100%)",
               color: "#FFFFFF",
               borderRadius: 12, fontSize: 12, fontWeight: 500, marginBottom: 12,
