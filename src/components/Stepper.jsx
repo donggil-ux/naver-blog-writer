@@ -21,6 +21,7 @@ export default function Stepper({ current, theme }) {
     <div aria-label="진행 단계" style={{
       display: "flex", alignItems: "center", gap: 8,
       padding: "10px 2px 18px",
+      width: "100%", overflow: "hidden",
     }}>
       {STEPS.map((s, idx) => {
         const done = s.id < current;
@@ -45,7 +46,7 @@ export default function Stepper({ current, theme }) {
               >
                 {done ? "✓" : s.id}
               </div>
-              <div style={{
+              <div className="nb-stepper-label" style={{
                 fontSize: 10, fontWeight: active ? 600 : 400,
                 color: active || done ? textColor : mutedColor,
                 letterSpacing: "-0.01em", whiteSpace: "nowrap",

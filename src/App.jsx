@@ -990,6 +990,7 @@ export default function NaverBlogApp() {
           .nb-hero-title{font-size:28px!important}
           .nb-result-head{flex-wrap:wrap!important;gap:8px!important}
           .nb-sec-title{font-size:18px!important}
+          .nb-stepper-label{display:none!important}
         }
         /* 태블릿 / 아이패드 (481~900px) */
         @media (min-width:481px) and (max-width:900px){
