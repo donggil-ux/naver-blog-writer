@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * 우측 상단 햄버거 메뉴 — 뷰 전환 (작성하기 / 대시보드 / 스케줄).
+ * 우측 상단 햄버거 메뉴 — 뷰 전환 + 생성 내역 + 테마 전환.
  * props:
  *   view: 현재 뷰 id
  *   onChange: (next) => void
+ *   onOpenHistory: () => void
+ *   historyCount: number
  *   theme: 테마 객체
+ *   themeMode: "light" | "dark"
+ *   onToggleTheme: () => void
  */
-const ITEMS = [
+const VIEW_ITEMS = [
   { id: "writer",    icon: "✏️", label: "작성하기" },
   { id: "dashboard", icon: "📊", label: "주제 집중도" },
   { id: "schedule",  icon: "📅", label: "발행 스케줄" },
 ];
 
-export default function HeaderMenu({ view, onChange, theme }) {
+export default function HeaderMenu({ view, onChange, onOpenHistory, historyCount = 0, theme, themeMode, onToggleTheme }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
 
@@ -38,9 +42,19 @@ export default function HeaderMenu({ view, onChange, theme }) {
     };
   }, [open]);
 
-  const handlePick = (id) => {
+  const handlePickView = (id) => {
     setOpen(false);
     if (id !== view) onChange(id);
+  };
+
+  const handleHistory = () => {
+    setOpen(false);
+    onOpenHistory?.();
+  };
+
+  const handleTheme = () => {
+    // 테마는 닫지 않고 바로 토글
+    onToggleTheme?.();
   };
 
   return (
@@ -64,19 +78,20 @@ export default function HeaderMenu({ view, onChange, theme }) {
           role="menu"
           style={{
             position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 50,
-            minWidth: 180, background: cardBg, border: `1px solid ${border}`,
+            minWidth: 190, background: cardBg, border: `1px solid ${border}`,
             borderRadius: 12, padding: 6,
             boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
           }}
         >
-          {ITEMS.map(item => {
+          {/* 뷰 전환 */}
+          {VIEW_ITEMS.map(item => {
             const active = item.id === view;
             return (
               <button
                 key={item.id}
                 role="menuitem"
                 type="button"
-                onClick={() => handlePick(item.id)}
+                onClick={() => handlePickView(item.id)}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 10,
                   padding: "10px 12px", borderRadius: 8,
@@ -93,6 +108,55 @@ export default function HeaderMenu({ view, onChange, theme }) {
               </button>
             );
           })}
+
+          {/* 구분선 */}
+          <div style={{ height: 1, background: border, margin: "4px 6px" }} />
+
+          {/* 생성 내역 */}
+          <button
+            role="menuitem"
+            type="button"
+            onClick={handleHistory}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10,
+              padding: "10px 12px", borderRadius: 8,
+              background: "transparent", color: mutedColor,
+              border: "none", cursor: "pointer", textAlign: "left",
+              fontSize: 13, fontWeight: 500, letterSpacing: "-0.01em",
+            }}
+          >
+            <span style={{ fontSize: 15, lineHeight: 1 }}>📋</span>
+            <span>생성 내역</span>
+            {historyCount > 0 && (
+              <span style={{
+                marginLeft: "auto",
+                minWidth: 18, height: 18, borderRadius: 9,
+                background: "#FFD43B", color: "#1F1F1F",
+                fontSize: 10, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 5px",
+              }}>
+                {historyCount}
+              </span>
+            )}
+          </button>
+
+          {/* 테마 전환 */}
+          <button
+            role="menuitem"
+            type="button"
+            onClick={handleTheme}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10,
+              padding: "10px 12px", borderRadius: 8,
+              background: "transparent", color: mutedColor,
+              border: "none", cursor: "pointer", textAlign: "left",
+              fontSize: 13, fontWeight: 500, letterSpacing: "-0.01em",
+            }}
+          >
+            <span style={{ fontSize: 15, lineHeight: 1 }}>{themeMode === "dark" ? "☀️" : "🌙"}</span>
+            <span>{themeMode === "dark" ? "라이트 모드" : "다크 모드"}</span>
+          </button>
         </div>
       )}
     </div>

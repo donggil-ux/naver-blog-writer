@@ -1035,21 +1035,15 @@ export default function NaverBlogApp() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {draftStatus && <span className="nb-header-sub" style={{ fontSize: 11, color: t.pageMuted, fontWeight: 400 }}>{draftStatus}</span>}
-          <HeaderMenu view={view} onChange={setView} theme={t} />
-          <button className="nb-history-btn" onClick={() => setShowHistory(true)} aria-label="내역" title="생성 내역" style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: t.toggleBg, border: "none", color: t.pageText, cursor: "pointer",
-            fontSize: 15, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
-            position: "relative",
-          }}>
-            📋
-            {history.length > 0 && <span style={{ position: "absolute", top: -2, right: -2, width: 16, height: 16, borderRadius: "50%", background: COLORS.accent, color: PRIMARY_TEXT, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{history.length}</span>}
-          </button>
-          <button onClick={toggleTheme} aria-label="Toggle theme" title={theme === "dark" ? "라이트 모드" : "다크 모드"} style={{
-            width: 34, height: 34, borderRadius: 10,
-            background: t.toggleBg, border: "none", color: t.pageText, cursor: "pointer",
-            fontSize: 16, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
-          }}>{theme === "dark" ? "☀️" : "🌙"}</button>
+          <HeaderMenu
+            view={view}
+            onChange={setView}
+            onOpenHistory={() => setShowHistory(true)}
+            historyCount={history.length}
+            theme={t}
+            themeMode={theme}
+            onToggleTheme={toggleTheme}
+          />
         </div>
       </div>
 
