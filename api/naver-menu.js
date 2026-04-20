@@ -10,24 +10,36 @@ function parseMenusFromHtml(html) {
   if (!html) return [];
   const out = [];
   const seen = new Set();
-  // Naver pcmap 페이지 내부 JSON: "name":"...","price":"..."
-  const re = /"name":"((?:[^"\\]|\\.){1,50})"[^{]{0,500}?"price":"?(\d{1,3}(?:,\d{3})+|\d{3,7})"?/g;
-  let m;
-  while ((m = re.exec(html)) !== null) {
-    const rawName = m[1]
-      .replace(/\\"/g, '"')
-      .replace(/\\u[\da-fA-F]{4}/g, (s) => String.fromCharCode(parseInt(s.slice(2), 16)))
-      .replace(/\\n|\\r|\\t/g, " ")
-      .trim();
-    const price = m[2].replace(/,/g, "");
-    if (rawName.length < 2 || rawName.length > 40) continue;
-    if (!/^\d{3,7}$/.test(price)) continue;
-    const priceNum = Number(price);
-    if (priceNum < 500 || priceNum > 500000) continue; // 이상치 필터
-    const key = rawName.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(`${rawName} ${priceNum.toLocaleString()}원`);
+
+  // 1단계: 실제 메뉴 배열 블록만 추출해서 정규식 스코프를 좁힘.
+  //  - `"menus":[...]` 또는 `"menu":[...]` 패턴 (Apollo state / Next.js __NEXT_DATA__)
+  //  - 배열 내부가 중첩된 객체라 대괄호 balance 대신 최대 길이(20000자)로 컷.
+  const blockRe = /"menus?"\s*:\s*\[[\s\S]{0,20000}?\]/g;
+  const blocks = html.match(blockRe) || [];
+  if (blocks.length === 0) return [];
+
+  // 2단계: 각 블록 내부에서 name/price 페어 매칭
+  const pairRe = /"name":"((?:[^"\\]|\\.){1,50})"[^{]{0,500}?"price":"?(\d{1,3}(?:,\d{3})+|\d{3,7})"?/g;
+
+  for (const block of blocks) {
+    let m;
+    pairRe.lastIndex = 0;
+    while ((m = pairRe.exec(block)) !== null) {
+      const rawName = m[1]
+        .replace(/\\"/g, '"')
+        .replace(/\\u[\da-fA-F]{4}/g, (s) => String.fromCharCode(parseInt(s.slice(2), 16)))
+        .replace(/\\n|\\r|\\t/g, " ")
+        .trim();
+      const price = m[2].replace(/,/g, "");
+      if (rawName.length < 2 || rawName.length > 40) continue;
+      if (!/^\d{3,7}$/.test(price)) continue;
+      const priceNum = Number(price);
+      if (priceNum < 500 || priceNum > 500000) continue; // 이상치 필터
+      const key = rawName.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(`${rawName} ${priceNum.toLocaleString()}원`);
+    }
   }
   return out;
 }

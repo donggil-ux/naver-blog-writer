@@ -591,6 +591,9 @@ export default function NaverBlogApp() {
     setCategory(cat); setName(""); setLocation(""); setDate(""); setMenus(""); setTarget(""); setMemo(""); setCompanion("");
     setPhotos([]); setStoreInfo(null); setResult(null); setKeywords([]);
     lastMenuFetchedRef.current = "";
+    // 진행 중이던 메뉴 fetch를 stale 처리 + 스켈레톤 즉시 정리
+    menuFetchReqRef.current++;
+    setMenusLoading(false);
   };
 
   // Vercel 서버리스 프록시 경유 (Google Gemini API)
