@@ -10,6 +10,18 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import BriefPlanner from "./components/BriefPlanner.tsx";
 import StoreSearchInput from "./components/StoreSearchInput.tsx";
+import CompletenessBadge from "./components/CompletenessBadge.jsx";
+import Stepper from "./components/Stepper.jsx";
+import PublishChecklist from "./components/PublishChecklist.jsx";
+import HeaderMenu from "./components/HeaderMenu.jsx";
+import LongTailSuggester from "./components/LongTailSuggester.jsx";
+import DashboardView from "./views/DashboardView.jsx";
+import ScheduleView from "./views/ScheduleView.jsx";
+import { completeness } from "./lib/completeness.js";
+import { seoChecklist } from "./lib/seoRules.js";
+import { parseTagsFromContent, normalizeEntry } from "./lib/history.js";
+import { findRelated } from "./lib/related.js";
+import { loadGoal, nextTargetDay, dDay, weeklyPublishedCount } from "./lib/goal.js";
 
 function SortablePhoto({ photo, index, onRemove, thumbStyle, COLORS, FF_MONO }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.url + index });
@@ -387,6 +399,9 @@ export default function NaverBlogApp() {
   const t = THEMES[theme];
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
+  // 2차 A2: 뷰 라우팅 — "writer" | "dashboard" | "schedule"
+  const [view, setView] = useState("writer");
+
   const [category, setCategory] = useState("food");
   const [name, setName]         = useState("");
   const [location, setLocation] = useState("");
@@ -395,6 +410,10 @@ export default function NaverBlogApp() {
   const [target, setTarget]     = useState("");
   const [memo, setMemo]         = useState("");
   const [companion, setCompanion] = useState("");
+  // ── SEO 키워드 (1차 개선 기획 P1) ──
+  const [mainKeyword, setMainKeyword]   = useState("");   // 핵심 키워드 1개
+  const [subKeywords, setSubKeywords]   = useState([]);   // 보조 키워드, 최대 4개
+  const [subKwInput, setSubKwInput]     = useState("");   // 서브 키워드 입력창 버퍼
   const [myStyle, setMyStyle]   = useState(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("nb-my-style");
@@ -416,6 +435,7 @@ export default function NaverBlogApp() {
   // ── Brief planner (제목·목차 선택 단계) ──
   const [step, setStep] = useState("input"); // 'input' | 'planning' | 'result'
   const [titleCandidates, setTitleCandidates] = useState([]); // [{id, text}]
+  const [firstLineCandidates, setFirstLineCandidates] = useState([]); // [{id, text}] — 1차 P3
   const [plannerOutline, setPlannerOutline] = useState([]); // [{id, text}]
   const [refBlock, setRefBlock] = useState("");
   const [bodyGenerating, setBodyGenerating] = useState(false);
@@ -440,19 +460,19 @@ export default function NaverBlogApp() {
   const draftSavedData = useRef(null);
 
   const saveDraft = useCallback(() => {
-    const draft = { category, name, location, date, menus, target, memo, companion, myStyle, savedAt: new Date().toISOString() };
+    const draft = { category, name, location, date, menus, target, memo, companion, myStyle, mainKeyword, subKeywords, savedAt: new Date().toISOString() };
     localStorage.setItem("blog_writer_draft", JSON.stringify(draft));
     const now = new Date();
     setDraftStatus(`임시저장 완료 · ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`);
-  }, [category, name, location, date, menus, target, memo, companion, myStyle]);
+  }, [category, name, location, date, menus, target, memo, companion, myStyle, mainKeyword, subKeywords]);
 
   // 디바운스 자동 저장
   useEffect(() => {
-    if (!name && !memo && !menus) return; // 빈 폼이면 저장 안 함
+    if (!name && !memo && !menus && !mainKeyword) return; // 빈 폼이면 저장 안 함
     if (draftTimer.current) clearTimeout(draftTimer.current);
     draftTimer.current = setTimeout(() => saveDraft(), 1500);
     return () => { if (draftTimer.current) clearTimeout(draftTimer.current); };
-  }, [category, name, location, date, menus, target, memo, companion, saveDraft]);
+  }, [category, name, location, date, menus, target, memo, companion, mainKeyword, subKeywords, saveDraft]);
 
   // 페이지 진입 시 저장된 draft 확인
   useEffect(() => {
@@ -476,6 +496,8 @@ export default function NaverBlogApp() {
     setMenus(d.menus || ""); setTarget(d.target || ""); setMemo(d.memo || "");
     setCompanion(d.companion || "");
     if (d.myStyle !== undefined) setMyStyle(d.myStyle);
+    setMainKeyword(d.mainKeyword || "");
+    setSubKeywords(Array.isArray(d.subKeywords) ? d.subKeywords : []);
     setShowDraftBanner(false);
   };
   const dismissDraft = () => { setShowDraftBanner(false); localStorage.removeItem("blog_writer_draft"); };
@@ -483,7 +505,11 @@ export default function NaverBlogApp() {
 
   // ── 생성 내역 ──
   const [history, setHistory] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("blog_writer_history") || "[]"); } catch { return []; }
+    try {
+      const raw = JSON.parse(localStorage.getItem("blog_writer_history") || "[]");
+      // 2차 A1: 기존 entry 읽을 때 tags/publishedAt 보정
+      return Array.isArray(raw) ? raw.map(normalizeEntry) : [];
+    } catch { return []; }
   });
   const [showHistory, setShowHistory] = useState(false);
   const [historyDetail, setHistoryDetail] = useState(null);
@@ -499,9 +525,12 @@ export default function NaverBlogApp() {
       title: name || (opts.isDraft ? "제목 미입력" : ""),
       content,
       isDraft: !!opts.isDraft,
-      formData: { category, name, location, date, menus, target, memo, companion, myStyle },
+      formData: { category, name, location, date, menus, target, memo, companion, myStyle, mainKeyword, subKeywords },
       keywords: Array.isArray(keywords) ? keywords : [],
       storeInfo: storeInfo || null,
+      // 2차 A1: 신규 필드
+      tags: opts.isDraft ? [] : parseTagsFromContent(content),
+      publishedAt: opts.publishedAt ?? null,
     };
     const updated = [entry, ...history].slice(0, 50);
     setHistory(updated);
@@ -509,7 +538,7 @@ export default function NaverBlogApp() {
   };
 
   const saveDraftToHistory = () => {
-    if (!name && !memo && !menus && !location) {
+    if (!name && !memo && !menus && !location && !mainKeyword) {
       showToast("저장할 내용이 없어요");
       return;
     }
@@ -544,6 +573,8 @@ export default function NaverBlogApp() {
     setMenus(d.menus || ""); setTarget(d.target || ""); setMemo(d.memo || "");
     setCompanion(d.companion || "");
     if (d.myStyle !== undefined) setMyStyle(d.myStyle);
+    setMainKeyword(d.mainKeyword || "");
+    setSubKeywords(Array.isArray(d.subKeywords) ? d.subKeywords : []);
     if (entry.isDraft) {
       setResult(null); setKeywords([]); setStoreInfo(null);
     } else {
@@ -590,6 +621,8 @@ export default function NaverBlogApp() {
   const resetForm = (cat) => {
     setCategory(cat); setName(""); setLocation(""); setDate(""); setMenus(""); setTarget(""); setMemo(""); setCompanion("");
     setPhotos([]); setStoreInfo(null); setResult(null); setKeywords([]);
+    setMainKeyword(""); setSubKeywords([]); setSubKwInput("");
+    setTitleCandidates([]); setFirstLineCandidates([]); setPlannerOutline([]);
     lastMenuFetchedRef.current = "";
     // 진행 중이던 메뉴 fetch를 stale 처리 + 스켈레톤 즉시 정리
     menuFetchReqRef.current++;
@@ -736,42 +769,73 @@ export default function NaverBlogApp() {
 
   const buildUserMsg = (kws) => {
     const photoInfo = photos.length > 0 ? photos.map((p, i) => `사진${i+1}(${p.name})`).join(", ") : "사진 없음";
-    const kwLine = kws && kws.length ? kws.join(", ") : "SEO에 맞게 자유롭게";
+    // 우선순위: 유저가 직접 입력한 메인/서브 키워드 → 네이버 트렌드에서 자동 추출된 kws
+    const userKws = [mainKeyword, ...subKeywords].map(s => s.trim()).filter(Boolean);
+    const autoKws = (kws || []).filter(k => !userKws.includes(k));
+    const mainLine = mainKeyword.trim()
+      ? `메인 키워드(반드시 제목·첫문장·본문에 자연스럽게 반복): ${mainKeyword.trim()}\n`
+      : "";
+    const subLine = subKeywords.length
+      ? `서브 키워드(본문 내 2~3회씩 배치): ${subKeywords.join(", ")}\n`
+      : "";
+    const autoLine = autoKws.length
+      ? `참고 키워드(선택적으로 활용): ${autoKws.slice(0, 6).join(", ")}`
+      : "참고 키워드: SEO에 맞게 자유롭게";
+    const kwBlock = `${mainLine}${subLine}${autoLine}`;
     const companionLabel = COMPANIONS.find(c => c.id === companion)?.label || "";
     const withLine = companionLabel ? `동행: ${companionLabel}\n` : "";
     return {
-      food:    `가게명: ${name}\n위치: ${location||"미입력"}\n방문일: ${date||"최근"}\n${withLine}영업시간: ${storeInfo?.hours || "미입력"}\n휴무/브레이크: ${[storeInfo?.closed, storeInfo?.breakTime].filter(Boolean).join(" / ") || "없음"}\n메뉴: ${menus||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
-      culture: `전시/공연명: ${name}\n장소: ${location||"미입력"}\n관람일: ${date||"최근"}\n${withLine}운영시간: ${storeInfo?.hours || "미입력"}\n휴무: ${storeInfo?.closed || "없음"}\n티켓가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
-      daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n${withLine}운영시간: ${storeInfo?.hours || "미입력"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n키워드: ${kwLine}`,
+      food:    `가게명: ${name}\n위치: ${location||"미입력"}\n방문일: ${date||"최근"}\n${withLine}영업시간: ${storeInfo?.hours || "미입력"}\n휴무/브레이크: ${[storeInfo?.closed, storeInfo?.breakTime].filter(Boolean).join(" / ") || "없음"}\n메뉴: ${menus||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n${kwBlock}`,
+      culture: `전시/공연명: ${name}\n장소: ${location||"미입력"}\n관람일: ${date||"최근"}\n${withLine}운영시간: ${storeInfo?.hours || "미입력"}\n휴무: ${storeInfo?.closed || "없음"}\n티켓가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n${kwBlock}`,
+      daily:   `주제: ${name}\n구매처/장소: ${location||"미입력"}\n날짜: ${date||"최근"}\n${withLine}운영시간: ${storeInfo?.hours || "미입력"}\n가격: ${menus||"미입력"}\n추천대상: ${target||"미입력"}\n메모: ${memo||"없음"}\n사진: ${photoInfo}\n${kwBlock}`,
     }[category];
   };
 
   const titlePromptFor = (cat) => {
     const categoryLabel = cat === "food" ? "맛집/카페" : cat === "culture" ? "문화생활(전시/공연/팝업)" : "일상/리뷰";
+    const mainKwRule = mainKeyword.trim()
+      ? `\n[메인 키워드 필수] 사용자가 지정한 메인 키워드 "${mainKeyword.trim()}"를 제목 3개 모두·첫 문장 3개 모두에 자연스럽게 포함할 것 (어색한 억지 삽입 금지, 어순·조사 자유).`
+      : "";
     return `너는 네이버 블로그 ${categoryLabel} 전담 카피라이터 겸 SEO 전문가야.
 [제목 규칙] 20~28자 / 이모지·느낌표·물음표·말줄임표 금지 / 핵심 키워드 1~2개 자연 포함 / 과장 표현(인생, 최고, 완벽, 대박) 지양 / 상위 블로그 제목 참고 시 톤·리듬만 차용, 문구 그대로 쓰지 말 것
-[마크업] 본문 안에서 아래 마크업을 적극 활용해 네이버 에디터 느낌으로 작성:
-- 핵심 팁·강조 한두 문장은 '> '로 시작 (인용구 처리, 본문당 1~2번)
-- 주요 단락 전환부에 '---' 한 줄 (구분선)
-- 특징·장단점·추천 포인트 등 나열 항목은 '- '로 불릿 (3~5개)
-[출력형식] — 아래 형식을 정확히 따를 것. 번호와 제목만. 설명·본문·태그·요약 금지.
+[첫 문장 규칙] 30~60자 / '~요/~더라구요/~었어요' 친근한 대화체 / 방문/구매/경험 계기 또는 공감 TMI로 시작 / 제목 내용을 1문장으로 요약하지 말고, 글의 분위기를 자연스럽게 여는 오프닝 / 과장 지양${mainKwRule}
+[출력형식] — 아래 형식을 정확히 따를 것. 설명·본문·태그·요약 금지.
+[제목]
 1. (제목1)
 2. (제목2)
-3. (제목3)`;
+3. (제목3)
+[첫문장]
+1. (첫 문장1)
+2. (첫 문장2)
+3. (첫 문장3)`;
   };
 
-  const parseTitleCandidates = (text) => {
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-    const picked = [];
-    for (const line of lines) {
-      const m = line.match(/^(?:\d+[\.)]\s*|[-•]\s*)(.+)$/);
-      if (m) {
-        const clean = m[1].replace(/^["'“”「『]|["'“”」』]$/g, "").trim();
-        if (clean) picked.push(clean);
+  // 섹션 레이블([제목]/[첫문장]) 기준으로 분리해 번호 리스트를 추출.
+  // 섹션이 없는 구형 응답도 견딜 수 있게 최상위 번호 리스트도 지원.
+  const parseTitleAndFirstLines = (text) => {
+    if (!text) return { titles: [], firstLines: [] };
+    const raw = text.replace(/\r/g, "");
+    const titleM = raw.match(/\[제목\]\s*([\s\S]*?)(?=\[첫\s*문장\]|$)/);
+    const firstM = raw.match(/\[첫\s*문장\]\s*([\s\S]*)/);
+    const pickList = (block, limit = 3) => {
+      if (!block) return [];
+      const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
+      const picked = [];
+      for (const line of lines) {
+        const m = line.match(/^(?:\d+[\.)]\s*|[-•]\s*)(.+)$/);
+        if (m) {
+          const clean = m[1].replace(/^["'“”「『]|["'“”」』]$/g, "").trim();
+          if (clean) picked.push(clean);
+        }
+        if (picked.length >= limit) break;
       }
-      if (picked.length >= 3) break;
-    }
-    return picked;
+      return picked;
+    };
+    let titles = pickList(titleM?.[1]);
+    const firstLines = pickList(firstM?.[1]);
+    // 레이블이 없던 구형 응답 — 전체에서 번호만으로 뽑아 제목만 채움
+    if (titles.length === 0) titles = pickList(raw);
+    return { titles, firstLines };
   };
 
   const handleGenerate = async () => {
@@ -803,34 +867,41 @@ export default function NaverBlogApp() {
         : "";
       setRefBlock(refBlockLocal);
 
-      // ── 1단계: 제목 후보 3개만 생성 ──
-      setLoadingStep("🏷️ 제목 후보 생성 중...");
+      // ── 1단계: 제목 3안 + 첫 문장 3안 한 번에 생성 ──
+      setLoadingStep("🏷️ 제목·첫 문장 후보 생성 중...");
       const userMsg = buildUserMsg(kws);
       const titleText = await callGemini({
         model: "gemini-2.5-flash",
         systemInstruction: { parts: [{ text: titlePromptFor(category) }] },
-        contents: [{ role: "user", parts: [{ text: `아래 정보로 네이버 블로그 제목 후보 3개만 뽑아줘.\n${userMsg}${refBlockLocal}` }] }],
-        generationConfig: { maxOutputTokens: 500, temperature: 0.9 },
+        contents: [{ role: "user", parts: [{ text: `아래 정보로 네이버 블로그 제목 후보 3개와 첫 문장 후보 3개를 뽑아줘.\n${userMsg}${refBlockLocal}` }] }],
+        generationConfig: { maxOutputTokens: 800, temperature: 0.9 },
       });
-      const parsed = parseTitleCandidates(titleText);
-      if (parsed.length < 1) {
+      const { titles: parsedTitles, firstLines: parsedFirstLines } = parseTitleAndFirstLines(titleText);
+      if (parsedTitles.length < 1) {
         throw new Error("제목 후보 파싱에 실패했어요. 다시 시도해주세요.");
       }
-      setTitleCandidates(parsed.map((text, i) => ({ id: `t${i+1}`, text })));
+      setTitleCandidates(parsedTitles.map((text, i) => ({ id: `t${i+1}`, text })));
+      setFirstLineCandidates(parsedFirstLines.map((text, i) => ({ id: `f${i+1}`, text })));
       setPlannerOutline((DEFAULT_OUTLINES[category] || []).map((t, i) => ({ id: `o${i}`, text: t })));
       setStep("planning");
     } catch (e) { console.error(e); alert(`오류: ${e.message}`); }
     finally { setLoading(false); setLoadingStep(""); }
   };
 
-  const handleGenerateBody = async (selectedTitle, outline) => {
+  const handleGenerateBody = async (selectedTitle, selectedFirstLine, outline, relatedTitles = []) => {
     setBodyGenerating(true);
     try {
       const styleGuide = myStyle.trim() ? `\n\n[중요] 아래 글의 말투·문체·리듬을 그대로 따라줘:\n---\n${myStyle}\n---` : "";
       const userMsg = buildUserMsg(keywords);
+      const firstLineBlock = selectedFirstLine
+        ? `\n[확정 첫 문장 — 본문 서두를 이 문장으로 시작해줘] ${selectedFirstLine}`
+        : "";
+      const relatedBlock = Array.isArray(relatedTitles) && relatedTitles.length
+        ? `\n[관련 이전 글 섹션 — 본문 맨 아래에 아래 형식 그대로 추가해줘. 링크는 "(URL 입력 필요)" 플레이스홀더로 남겨둬]\n### 👉 이런 글도 함께 읽어보세요\n${relatedTitles.map(t => `- [${t}](URL 입력 필요)`).join("\n")}`
+        : "";
       const outlineBlock = outline && outline.length
-        ? `\n\n[확정 제목] ${selectedTitle}\n[이번엔 제목 후보 목록을 만들지 말고, 아래 확정 제목으로 작성해줘. [추천 제목 3가지] 섹션은 건너뛰고, 시스템 프롬프트에 정의된 출력형식 순서(요약 표 → 추천 태그 → 본문)대로 출력.]\n[목차 — 이 순서대로 본문을 구성해줘]\n${outline.map((o, i) => `${i+1}. ${o.text}`).join("\n")}`
-        : `\n\n[확정 제목] ${selectedTitle}\n[이번엔 제목 후보 목록을 만들지 말고, 아래 확정 제목으로 작성해줘. [추천 제목 3가지] 섹션은 건너뛰고, 시스템 프롬프트에 정의된 출력형식 순서(요약 표 → 추천 태그 → 본문)대로 출력.]`;
+        ? `\n\n[확정 제목] ${selectedTitle}${firstLineBlock}${relatedBlock}\n[이번엔 제목 후보 목록을 만들지 말고, 아래 확정 제목으로 작성해줘. [추천 제목 3가지] 섹션은 건너뛰고, 시스템 프롬프트에 정의된 출력형식 순서(요약 표 → 추천 태그 → 본문)대로 출력.]\n[목차 — 이 순서대로 본문을 구성해줘]\n${outline.map((o, i) => `${i+1}. ${o.text}`).join("\n")}`
+        : `\n\n[확정 제목] ${selectedTitle}${firstLineBlock}${relatedBlock}\n[이번엔 제목 후보 목록을 만들지 말고, 아래 확정 제목으로 작성해줘. [추천 제목 3가지] 섹션은 건너뛰고, 시스템 프롬프트에 정의된 출력형식 순서(요약 표 → 추천 태그 → 본문)대로 출력.]`;
 
       const bodyText = await callGemini({
         model: "gemini-2.5-flash",
@@ -854,16 +925,30 @@ export default function NaverBlogApp() {
   const handleBackFromPlanning = () => {
     setStep("input");
     setTitleCandidates([]);
+    setFirstLineCandidates([]);
   };
 
   const fc = FIELD_CONFIG[category];
   const cat = CATEGORIES.find(c => c.id === category);
 
-  if (step === "planning") {
+  if (view === "writer" && step === "planning") {
+    // 2차 기능 2: Step 4 진입 시점에 현재 폼과 과거 글 유사도 계산
+    const relatedRanked = findRelated({
+      form: { category, name, mainKeyword, subKeywords, location },
+      history,
+    });
+    const relatedCandidates = relatedRanked.map(r => ({
+      id: r.entry.id,
+      title: r.entry.title || "(제목 없음)",
+      score: r.score,
+      createdAt: r.entry.createdAt,
+    }));
     return (
       <BriefPlanner
         titles={titleCandidates}
+        firstLines={firstLineCandidates}
         defaultOutline={plannerOutline}
+        relatedCandidates={relatedCandidates}
         isGenerating={bodyGenerating}
         onSubmit={handleGenerateBody}
         onBack={handleBackFromPlanning}
@@ -950,6 +1035,7 @@ export default function NaverBlogApp() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {draftStatus && <span className="nb-header-sub" style={{ fontSize: 11, color: t.pageMuted, fontWeight: 400 }}>{draftStatus}</span>}
+          <HeaderMenu view={view} onChange={setView} theme={t} />
           <button className="nb-history-btn" onClick={() => setShowHistory(true)} aria-label="내역" title="생성 내역" style={{
             width: 34, height: 34, borderRadius: 10,
             background: t.toggleBg, border: "none", color: t.pageText, cursor: "pointer",
@@ -967,7 +1053,64 @@ export default function NaverBlogApp() {
         </div>
       </div>
 
+      {view === "dashboard" && <DashboardView history={history} theme={t} />}
+      {view === "schedule" && <ScheduleView history={history} theme={t} />}
+
+      {view === "writer" && (
       <div style={s.body} className="nb-body">
+
+        {/* D-day 배너 — 2차 기능 4 */}
+        {(() => {
+          const goal = loadGoal();
+          if (!goal.weeklyTarget) return null;
+          const now = new Date();
+          const tgt = nextTargetDay(goal, history, now);
+          const done = weeklyPublishedCount(history, now);
+          const dd = dDay(tgt.date, now);
+          if (done >= goal.weeklyTarget && !tgt.date) {
+            return (
+              <div style={{
+                padding: "10px 16px", background: "#E8F5E9", color: "#0F9960",
+                borderRadius: 12, fontSize: 12, fontWeight: 600, marginBottom: 12,
+              }}>
+                🎉 이번 주 발행 목표 {goal.weeklyTarget}회를 모두 달성했어요!
+              </div>
+            );
+          }
+          if (tgt.date == null) return null;
+          return (
+            <div style={{
+              padding: "10px 16px", background: t.toggleBg, color: t.pageText,
+              borderRadius: 12, fontSize: 12, fontWeight: 500, marginBottom: 12,
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "#FFB800" }}>
+                {dd === 0 ? "D-Day" : dd > 0 ? `D-${dd}` : `D+${-dd}`}
+              </span>
+              <span>다음 발행까지 · 이번 주 {done}/{goal.weeklyTarget}회 달성</span>
+            </div>
+          );
+        })()}
+
+        {/* 주제 불균형 경고 — 2차 기능 4 */}
+        {(() => {
+          const recent5 = history.filter(e => !e.isDraft).slice(0, 5);
+          if (recent5.length < 5) return null;
+          const first = recent5[0]?.category;
+          const allSame = recent5.every(e => e.category === first);
+          if (!allSame) return null;
+          const label = CATEGORIES.find(c => c.id === first)?.label || first;
+          return (
+            <div style={{
+              padding: "10px 14px", background: "#FFF8E1", color: "#92690A",
+              borderRadius: 12, fontSize: 12, fontWeight: 500, marginBottom: 12,
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <span>💡</span>
+              <span>최근 5개 글이 모두 "{label}" 카테고리예요. 다른 주제도 시도해 보세요.</span>
+            </div>
+          );
+        })()}
 
         {/* 임시저장 복원 배너 */}
         {showDraftBanner && (
@@ -986,6 +1129,17 @@ export default function NaverBlogApp() {
             어떤 글을 작성할까요?
           </div>
         </div>
+
+        {/* Stepper — 1차 P4 진행 단계 표시 */}
+        {(() => {
+          const report = completeness({ name, mainKeyword, subKeywords, menus, memo, photos, location, date, companion });
+          let current = 1;
+          if (result) current = 5;
+          else if (step === "planning") current = 4;
+          else if (report.score >= 70) current = 3;       // 품질 점검 단계
+          else if (report.score >= 40) current = 2;       // 후기 정보 단계
+          return <Stepper current={current} theme={t} />;
+        })()}
 
         {/* 카테고리 탭 — Apple Segmented Control 스타일 */}
         <div style={{ display: "flex", gap: 0, marginBottom: 28, background: theme === "dark" ? "#1F2937" : "#E5E7EB", borderRadius: 12, padding: 3 }}>
@@ -1008,6 +1162,12 @@ export default function NaverBlogApp() {
             );
           })}
         </div>
+
+        {/* 완성도 배지 — 1차 P2 */}
+        <CompletenessBadge
+          report={completeness({ name, mainKeyword, subKeywords, menus, memo, photos, location, date, companion })}
+          theme={t}
+        />
 
         {/* 기본 정보 */}
         <div style={s.card} className="nb-card">
@@ -1107,6 +1267,123 @@ export default function NaverBlogApp() {
               <input style={s.input} placeholder={fc.targetPH} value={target} onChange={e => setTarget(e.target.value)} />
             </div>
           )}
+        </div>
+
+        {/* SEO 키워드 — 1차 개선 기획 P1 */}
+        <div style={s.card} className="nb-card">
+          <div className="nb-sec-title" style={s.secTitle}>🎯 SEO 키워드</div>
+          <div style={{ fontSize: 13, color: t.pageMuted, marginBottom: 14, fontWeight: 340, letterSpacing: "-0.14px" }}>
+            메인 키워드는 제목·첫 문장·본문에 반복 배치돼요. 서브 키워드는 최대 4개까지 추가할 수 있어요.
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={s.label}>메인 키워드 *</label>
+            <input
+              style={s.input}
+              placeholder={category === "food" ? "예: 강남역 파스타 맛집" : category === "culture" ? "예: 성수동 팝업 전시" : "예: 다이슨 에어랩 후기"}
+              value={mainKeyword}
+              maxLength={30}
+              onChange={e => setMainKeyword(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label style={s.label}>서브 키워드 (선택, 최대 4개)</label>
+            <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+              <input
+                style={{ ...s.input, flex: 1 }}
+                placeholder="예: 데이트 코스, 주차 가능"
+                value={subKwInput}
+                maxLength={20}
+                disabled={subKeywords.length >= 4}
+                onChange={e => setSubKwInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === ",") {
+                    e.preventDefault();
+                    const v = subKwInput.trim().replace(/,$/, "").trim();
+                    if (v && !subKeywords.includes(v) && subKeywords.length < 4) {
+                      setSubKeywords([...subKeywords, v]);
+                      setSubKwInput("");
+                    }
+                  } else if (e.key === "Backspace" && !subKwInput && subKeywords.length) {
+                    setSubKeywords(subKeywords.slice(0, -1));
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const v = subKwInput.trim().replace(/,$/, "").trim();
+                  if (v && !subKeywords.includes(v) && subKeywords.length < 4) {
+                    setSubKeywords([...subKeywords, v]);
+                    setSubKwInput("");
+                  }
+                }}
+                disabled={!subKwInput.trim() || subKeywords.length >= 4}
+                style={{
+                  padding: "0 16px",
+                  borderRadius: 12,
+                  border: `1px solid ${t.pageBorder}`,
+                  background: (!subKwInput.trim() || subKeywords.length >= 4) ? t.cardBg : PRIMARY,
+                  color: (!subKwInput.trim() || subKeywords.length >= 4) ? t.pageMuted : PRIMARY_TEXT,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  fontFamily: FF_SANS,
+                  cursor: (!subKwInput.trim() || subKeywords.length >= 4) ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >추가</button>
+            </div>
+
+            {subKeywords.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                {subKeywords.map((kw, i) => (
+                  <div key={`${kw}-${i}`} style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    padding: "6px 6px 6px 12px",
+                    borderRadius: 9999,
+                    background: PRIMARY,
+                    color: PRIMARY_TEXT,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    fontFamily: FF_SANS,
+                    letterSpacing: "-0.14px",
+                  }}>
+                    {kw}
+                    <button
+                      type="button"
+                      onClick={() => setSubKeywords(subKeywords.filter((_, idx) => idx !== i))}
+                      aria-label={`${kw} 삭제`}
+                      style={{
+                        width: 20, height: 20, borderRadius: "50%",
+                        border: "none", background: "rgba(0,0,0,0.12)", color: PRIMARY_TEXT,
+                        fontSize: 11, lineHeight: "20px", padding: 0, cursor: "pointer",
+                      }}
+                    >✕</button>
+                  </div>
+                ))}
+                <div style={{ alignSelf: "center", fontSize: 12, color: t.pageMuted, marginLeft: 4 }}>
+                  {subKeywords.length}/4
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 롱테일 키워드 추천 — 2차 기능 3 */}
+          <LongTailSuggester
+            mainKeyword={mainKeyword}
+            category={category}
+            location={location}
+            companion={companion}
+            subKeywords={subKeywords}
+            onReplaceMain={(q) => setMainKeyword(q)}
+            onAddSub={(q) => {
+              if (!subKeywords.includes(q) && subKeywords.length < 4) {
+                setSubKeywords([...subKeywords, q]);
+              }
+            }}
+            theme={t}
+          />
         </div>
 
         {/* 누구랑 갔는지 */}
@@ -1278,6 +1555,14 @@ export default function NaverBlogApp() {
           <div style={{ background: t.cardBg, borderRadius: 16, border: `1px solid ${t.cardBorder}`, marginTop: 20, overflow: "hidden", boxShadow: t.cardShadow }} className="nb-card nb-card-result">
             <div style={{ height: 4, background: GRADIENT }} />
             <div style={{ padding: 24 }}>
+              {/* 발행 전 체크리스트 — 1차 P5 */}
+              <PublishChecklist
+                report={seoChecklist({
+                  form: { name, mainKeyword, subKeywords, menus, memo, photos, location, date, companion },
+                  result,
+                })}
+                theme={t}
+              />
               <div className="nb-result-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, gap: 12 }}>
                 <div style={{ fontFamily: FF_SANS, fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.35, color: t.pageText }}>✅ 완성된 포스팅</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -1298,6 +1583,7 @@ export default function NaverBlogApp() {
         )}
 
       </div>
+      )}
 
       {/* ── 생성 내역 사이드 패널 ── */}
       {showHistory && (

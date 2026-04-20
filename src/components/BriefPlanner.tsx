@@ -19,13 +19,17 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 export type TitleCandidate = { id: string; text: string };
+export type FirstLineCandidate = { id: string; text: string };
 export type OutlineItem = { id: string; text: string };
+export type RelatedCandidate = { id: string | number; title: string; score: number; createdAt?: string };
 
 type BriefPlannerProps = {
   titles: TitleCandidate[];
+  firstLines?: FirstLineCandidate[];
   defaultOutline: OutlineItem[];
+  relatedCandidates?: RelatedCandidate[];
   isGenerating?: boolean;
-  onSubmit: (selectedTitle: string, outline: OutlineItem[]) => void;
+  onSubmit: (selectedTitle: string, selectedFirstLine: string | null, outline: OutlineItem[], relatedTitles: string[]) => void;
   onBack: () => void;
 };
 
@@ -76,23 +80,33 @@ function SortableOutlineItem({
 
 export default function BriefPlanner({
   titles,
+  firstLines = [],
   defaultOutline,
+  relatedCandidates = [],
   isGenerating = false,
   onSubmit,
   onBack,
 }: BriefPlannerProps) {
   const [selectedTitleId, setSelectedTitleId] = useState<string | null>(null);
+  const [selectedFirstLineId, setSelectedFirstLineId] = useState<string | null>(null);
   const [outline, setOutline] = useState<OutlineItem[]>(defaultOutline);
   const [adding, setAdding] = useState(false);
   const [newItemText, setNewItemText] = useState('');
   const [titleList, setTitleList] = useState<TitleCandidate[]>(titles);
+  const [firstLineList, setFirstLineList] = useState<FirstLineCandidate[]>(firstLines);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [selectedRelatedIds, setSelectedRelatedIds] = useState<Set<string>>(new Set());
 
   // 부모에서 titles prop이 바뀌면(재생성 등) 로컬 상태 동기화
   useEffect(() => {
     setTitleList(titles);
   }, [titles]);
+  useEffect(() => {
+    setFirstLineList(firstLines);
+    // 새 데이터 오면 기존 선택 초기화
+    setSelectedFirstLineId(null);
+  }, [firstLines]);
 
   const beginEdit = (id: string, current: string) => {
     setEditingId(id);
@@ -148,7 +162,20 @@ export default function BriefPlanner({
     if (!selectedTitleId || isGenerating) return;
     const selected = titleList.find((t) => t.id === selectedTitleId);
     if (!selected) return;
-    onSubmit(selected.text, outline);
+    const selFirst = firstLineList.find((f) => f.id === selectedFirstLineId) ?? null;
+    const relatedTitles = relatedCandidates
+      .filter((r) => selectedRelatedIds.has(String(r.id)))
+      .map((r) => r.title);
+    onSubmit(selected.text, selFirst?.text ?? null, outline, relatedTitles);
+  };
+
+  const toggleRelated = (id: string) => {
+    setSelectedRelatedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const canSubmit = !!selectedTitleId && !isGenerating;
@@ -275,6 +302,90 @@ export default function BriefPlanner({
             })}
           </ul>
         </section>
+
+        {firstLineList.length > 0 && (
+          <section className="px-5 pt-8">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-[15px] font-semibold text-neutral-900">첫 문장 후보</h2>
+              <span className="text-[12px] text-neutral-400">1개 선택 (선택)</span>
+            </div>
+            <ul className="space-y-2">
+              {firstLineList.map((line) => {
+                const isSelected = selectedFirstLineId === line.id;
+                return (
+                  <li key={line.id}>
+                    <button
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => setSelectedFirstLineId(isSelected ? null : line.id)}
+                      className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                        isSelected
+                          ? 'border-neutral-900 bg-neutral-900 text-white'
+                          : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400'
+                      }`}
+                    >
+                      <span className="text-[14px] leading-relaxed">{line.text}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-[12px] text-neutral-400">
+              선택하지 않으면 AI가 글 전체 맥락에 맞춰 자동으로 첫 문장을 써드려요.
+            </p>
+          </section>
+        )}
+
+        {relatedCandidates.length > 0 && (
+          <section className="px-5 pt-8">
+            <h2 className="mb-3 text-[15px] font-semibold text-neutral-900">
+              💡 이 글과 함께 소개하면 좋은 이전 글
+            </h2>
+            <ul className="space-y-2">
+              {relatedCandidates.map((r) => {
+                const id = String(r.id);
+                const checked = selectedRelatedIds.has(id);
+                const dt = r.createdAt ? new Date(r.createdAt) : null;
+                const dateStr = dt
+                  ? `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+                  : '';
+                return (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      aria-pressed={checked}
+                      onClick={() => toggleRelated(id)}
+                      className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${
+                        checked
+                          ? 'border-neutral-900 bg-neutral-900 text-white'
+                          : 'border-neutral-200 bg-white text-neutral-800 hover:border-neutral-400'
+                      }`}
+                    >
+                      <span
+                        className={`mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
+                          checked ? 'border-white bg-white text-neutral-900' : 'border-neutral-400 bg-white'
+                        }`}
+                      >
+                        {checked && <Check size={12} />}
+                      </span>
+                      <span className="flex-1">
+                        <span className="block text-[14px] font-medium leading-snug">{r.title || '(제목 없음)'}</span>
+                        {dateStr && (
+                          <span className={`block text-[11px] ${checked ? 'text-neutral-300' : 'text-neutral-400'}`}>
+                            {dateStr} · 점수 {r.score}
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-[12px] text-neutral-400">
+              체크한 글은 본문 끝에 "이런 글도 함께 읽어보세요" 섹션으로 자동 추가돼요.
+            </p>
+          </section>
+        )}
 
         <section className="px-5 pt-8 pb-28">
           <div className="mb-3 flex items-center justify-between">
