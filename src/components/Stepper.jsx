@@ -21,7 +21,7 @@ export default function Stepper({ current, theme }) {
     <div aria-label="진행 단계" style={{
       display: "flex", alignItems: "center", gap: 8,
       padding: "10px 2px 18px",
-      width: "100%", overflow: "hidden",
+      width: "100%",
     }}>
       {STEPS.map((s, idx) => {
         const done = s.id < current;
